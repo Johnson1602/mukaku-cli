@@ -45,6 +45,22 @@ Why this stack fits:
 - We do not need Go or Rust yet because there is no native work, daemon, browser control, or heavy performance requirement.
 - We want to learn the CLI pieces ourselves, so we avoid heavy frameworks like oclif for now.
 
+Checkpoint:
+
+Run these to confirm your local tools exist:
+
+```bash
+node --version
+pnpm --version
+```
+
+Expected:
+
+- Node should be `20` or newer.
+- pnpm should print a version number.
+
+If Node is too old, switch with your Node version manager before continuing.
+
 ## 2. Initialize The Package
 
 From the repo root:
@@ -86,6 +102,24 @@ Important fields:
 - `dev` runs the CLI directly from TypeScript while developing.
 - `build` creates `dist/index.js`, which is what `bin` points to.
 
+Checkpoint:
+
+Run:
+
+```bash
+node -p "require('./package.json').name"
+node -p "require('./package.json').bin.mukaku"
+```
+
+Expected:
+
+```text
+mukaku-cli
+./dist/index.js
+```
+
+This confirms that the package name and CLI executable mapping are present.
+
 ## 3. Install Dependencies
 
 ```bash
@@ -101,6 +135,22 @@ Why each one exists:
 - `tsdown`: builds the CLI into distributable JS.
 - `vitest`: tests normalization logic.
 - `@types/node`: gives TypeScript Node API types.
+
+Checkpoint:
+
+Run:
+
+```bash
+pnpm list commander zod
+pnpm list -D typescript tsx tsdown vitest @types/node
+```
+
+Expected:
+
+- `commander` and `zod` appear under dependencies.
+- `typescript`, `tsx`, `tsdown`, `vitest`, and `@types/node` appear under dev dependencies.
+
+If a package is missing, rerun the matching `pnpm add` command.
 
 ## 4. Add TypeScript Config
 
@@ -130,6 +180,21 @@ Why:
 - `rootDir: "."` tells TypeScript that both `src` and `test` belong to this project. Newer TypeScript versions ask for this explicitly when `outDir` is set.
 - `include` keeps TypeScript focused on source and tests.
 
+Checkpoint:
+
+Run:
+
+```bash
+pnpm typecheck
+```
+
+Expected at this exact stage:
+
+- If `src/` has no `.ts` files yet, TypeScript may say it found no inputs. That is okay for now.
+- Once `src/types.ts` exists, this command should pass with no output except the script header.
+
+If you see a `rootDir` warning, make sure `"rootDir": "."` is present.
+
 ## 5. Add Build Config
 
 Create `tsdown.config.ts`:
@@ -155,6 +220,21 @@ The `banner` is important. It inserts the shebang line:
 ```
 
 That tells your shell to run the built file with Node when it is used as an executable.
+
+Checkpoint:
+
+Run:
+
+```bash
+pnpm build
+```
+
+Expected at this exact stage:
+
+- It may fail because `src/index.ts` does not exist yet. That is okay.
+- The important thing is that TypeScript can load `tsdown.config.ts`; you should not see an error about `defineConfig` or missing `tsdown`.
+
+After step 11, `pnpm build` should succeed.
 
 ## 6. Define The Public Shape
 
@@ -222,6 +302,22 @@ Why this matters:
 - `MukakuSearchItem` is our stable CLI contract.
 - This separation lets Mukaku be weird without making our users deal with weirdness.
 
+Checkpoint:
+
+Run:
+
+```bash
+pnpm typecheck
+```
+
+Expected:
+
+- TypeScript should pass.
+
+Then intentionally break one thing for learning: change `title: string;` in `MukakuSearchItem` to `title: number;`, save, and run `pnpm typecheck` again. It may still pass right now because no code returns `MukakuSearchItem` yet. Change it back before continuing.
+
+This shows an important idea: type definitions become useful when implementation code starts using them.
+
 ## 7. Implement The HTTP Client
 
 Create `src/client.ts`.
@@ -276,6 +372,34 @@ Why this file exists:
 - The rest of the CLI can work with typed data.
 
 Note: the `app_id` and `identity` values were observed from the public website. If they change, this file is the first place to update.
+
+Checkpoint:
+
+Run:
+
+```bash
+pnpm typecheck
+```
+
+Expected:
+
+- TypeScript should pass.
+
+Optional direct API sanity check:
+
+```bash
+curl -sS 'https://web5.mukaku.com/prod/api/v1/getVideoList?sb=%E9%98%BF%E5%87%A1%E8%BE%BE&page=1&limit=3&app_id=83768d9ad4&identity=23734adac0301bccdcb107c4aa21f96c' | jq '.success, (.data.data | length), .data.data[0].title'
+```
+
+Expected shape:
+
+```text
+true
+3
+"阿凡达"
+```
+
+This confirms the upstream endpoint is reachable before our CLI calls it.
 
 ## 8. Normalize The Data
 
@@ -357,6 +481,33 @@ Why this file exists:
 
 This is one of the most important parts of a good CLI. A CLI should provide a useful interface, not just leak upstream API details.
 
+Checkpoint:
+
+Run:
+
+```bash
+pnpm typecheck
+```
+
+Expected:
+
+- TypeScript should pass.
+
+Quick manual check:
+
+Create a temporary scratch file only if you want to inspect the function before tests exist:
+
+```bash
+pnpm exec tsx -e "import { normalizeSearchResult } from './src/normalize.ts'; console.log(normalizeSearchResult({ title: '阿凡达', type: 1, doub_id: 1652587, doub_score: '8.8', years: '2009', class: '动作,科幻' }))"
+```
+
+Expected:
+
+- `type` becomes `movie`.
+- `doubanScore` becomes `8.8` as a number.
+- `categories` becomes `["动作", "科幻"]`.
+- `detailUrl` becomes `https://web5.mukaku.com/mv/1652587`.
+
 ## 9. Render Human Output
 
 Create `src/output.ts`.
@@ -421,6 +572,34 @@ Why:
 - Human output should be scannable.
 - It should not dump every field.
 - It should include enough detail for a person to choose a result.
+
+Checkpoint:
+
+Run:
+
+```bash
+pnpm typecheck
+```
+
+Expected:
+
+- TypeScript should pass.
+
+Quick manual check:
+
+```bash
+pnpm exec tsx -e "import { printSearchResults } from './src/output.ts'; printSearchResults([{ title: '阿凡达', originalTitle: 'Avatar', year: 2009, type: 'movie', doubanScore: 8.8, imdbScore: 7.9, quality: '4K蓝光', categories: ['动作', '科幻'], productionArea: '美国', definitions: [], detailUrl: 'https://web5.mukaku.com/mv/1652587' }])"
+```
+
+Expected:
+
+```text
+1. 阿凡达 (2009) 4K蓝光
+   Original: Avatar
+   Rating: Douban 8.8 / IMDb 7.9
+   Meta: movie | 美国 | 动作, 科幻
+   URL: https://web5.mukaku.com/mv/1652587
+```
 
 ## 10. Implement The Search Command
 
@@ -494,6 +673,28 @@ Why this file exists:
 - It coordinates the lower-level modules: client, normalization, and output.
 - Later, `commands/detail.ts` can sit beside it without making `index.ts` huge.
 
+Checkpoint:
+
+Run:
+
+```bash
+pnpm typecheck
+```
+
+Expected:
+
+- TypeScript should pass.
+
+If TypeScript complains about imports, check that `search.ts` uses:
+
+```ts
+import { searchMukaku } from "../client.js";
+import { normalizeSearchResults } from "../normalize.js";
+import { printSearchResults } from "../output.js";
+```
+
+The `.js` extension is correct in TypeScript when using `moduleResolution: "NodeNext"` because the emitted JavaScript will import `.js` files.
+
 ## 11. Implement The CLI Entrypoint
 
 Create `src/index.ts`.
@@ -549,6 +750,29 @@ Concepts in `commands/search.ts`:
 - `.option("--json")` defines a flag.
 - `.action(...)` is the function that runs when the command is invoked.
 
+Checkpoint:
+
+Run:
+
+```bash
+pnpm dev --help
+```
+
+Expected:
+
+- You should see help text with the CLI name `mukaku`.
+- The `search` command should appear in the command list.
+
+Then run:
+
+```bash
+pnpm dev search --help
+```
+
+Expected:
+
+- You should see `--limit`, `--page`, `--json`, and `--raw`.
+
 ## 12. Try It In Development
 
 Run:
@@ -585,6 +809,52 @@ What these modes are for:
 - `--json` is for LLMs, scripts, and structured consumers.
 - `--raw` is for debugging upstream API behavior.
 
+Checkpoint:
+
+Run:
+
+```bash
+pnpm dev search "阿凡达" --limit 3
+```
+
+Expected:
+
+- You should see three human-readable results.
+- The first result should usually be `阿凡达 (2009)`.
+
+Run:
+
+```bash
+pnpm dev search "阿凡达" --limit 1 --json
+```
+
+Expected:
+
+- Output should be valid JSON.
+- It should contain `"title": "阿凡达"`.
+- It should contain normalized fields like `originalTitle`, `doubanScore`, and `detailUrl`.
+
+Run:
+
+```bash
+pnpm dev search "阿凡达" --limit 1 --raw
+```
+
+Expected:
+
+- Output should include raw API fields like `doub_score`, `IMDB_score`, and `zqxd`.
+
+Run:
+
+```bash
+pnpm dev search "阿凡达" --limit nope
+```
+
+Expected:
+
+- The command should print `Error: --limit must be a positive integer`.
+- The command should exit as a failure.
+
 ## 13. Build The CLI
 
 ```bash
@@ -607,10 +877,36 @@ mukaku search "阿凡达"
 If you do not want to link globally, you can also use:
 
 ```bash
-pnpm exec mukaku search "阿凡达"
+node dist/index.js search "阿凡达"
 ```
 
 The important idea: `package.json` `bin` maps the command name `mukaku` to the built executable file.
+
+Checkpoint:
+
+Run:
+
+```bash
+pnpm build
+head -n 1 dist/index.js
+node dist/index.js search "阿凡达" --limit 1
+```
+
+Expected:
+
+- The first line of `dist/index.js` should be `#!/usr/bin/env node`.
+- The built CLI should print one result.
+
+Then run:
+
+```bash
+pnpm link --global
+mukaku search "阿凡达" --limit 1
+```
+
+Expected:
+
+- The command name `mukaku` should work from your shell.
 
 ## 14. Add A Normalization Test
 
@@ -672,6 +968,26 @@ Why test normalization first:
 - It is deterministic.
 - It is where most subtle bugs happen.
 - It protects the stable CLI contract from upstream naming quirks.
+
+Checkpoint:
+
+Run:
+
+```bash
+pnpm test
+```
+
+Expected:
+
+- The normalization test should pass.
+
+Then intentionally break the implementation for learning: in `normalize.ts`, temporarily change `type: mapType(item.type)` to `type: "unknown"`, then run `pnpm test`.
+
+Expected:
+
+- The test should fail because it expected `"movie"`.
+
+Change the code back after seeing the failure. This proves the test is protecting real behavior.
 
 ## 15. Common CLI Design Rules To Notice
 
