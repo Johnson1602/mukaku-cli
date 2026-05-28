@@ -1,0 +1,22 @@
+{
+  "name": "mukaku-cli",
+  "version": "0.1.0",
+  "description": "A CLI for searching Mukaku movie and TV resources",
+  "type": "module",
+  "bin": {
+    "mukaku": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.33.2"
+}
