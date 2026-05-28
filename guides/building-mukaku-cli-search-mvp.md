@@ -168,7 +168,8 @@ Create `tsconfig.json`:
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "rootDir": ".",
-    "outDir": "dist"
+    "outDir": "dist",
+    "types": ["node"]
   },
   "include": ["src", "test"]
 }
@@ -179,6 +180,7 @@ Why:
 - `strict: true` helps catch mistakes early.
 - `NodeNext` matches Node ESM behavior.
 - `rootDir: "."` tells TypeScript that both `src` and `test` belong to this project. Newer TypeScript versions ask for this explicitly when `outDir` is set.
+- `types: ["node"]` loads Node globals like `process`.
 - `include` keeps TypeScript focused on source and tests.
 
 Checkpoint:
@@ -365,22 +367,29 @@ export interface SearchParams {
   limit: number;
 }
 
-export async function searchMukaku(params: SearchParams): Promise<SearchResponse> {
+function buildSearchUrl(params: SearchParams): URL {
   const url = new URL("/prod/api/v1/getVideoList", MUKAKU_BASE_URL);
   url.searchParams.set("sb", params.query);
   url.searchParams.set("page", String(params.page));
   url.searchParams.set("limit", String(params.limit));
   url.searchParams.set("app_id", APP_ID);
   url.searchParams.set("identity", IDENTITY);
+  return url;
+}
 
-  const response = await fetch(url);
+export async function fetchRawSearchResponse(params: SearchParams): Promise<unknown> {
+  const response = await fetch(buildSearchUrl(params));
 
   if (!response.ok) {
     throw new Error(`Mukaku request failed: HTTP ${response.status}`);
   }
 
-  const json = await response.json();
-  const parsed = searchResponseSchema.safeParse(json);
+  return response.json();
+}
+
+export async function searchMukaku(params: SearchParams): Promise<SearchResponse> {
+  const rawResponse = await fetchRawSearchResponse(params);
+  const parsed = searchResponseSchema.safeParse(rawResponse);
 
   if (!parsed.success) {
     throw new Error(`Mukaku response shape changed: ${parsed.error.message}`);
@@ -398,6 +407,7 @@ Why this file exists:
 
 - It hides URL construction.
 - It keeps API credentials/identifiers in one place.
+- It can return the untouched upstream response for `--raw`.
 - It validates responses at the edge of the system.
 - The rest of the CLI can work with typed data.
 
@@ -652,7 +662,7 @@ Create `src/commands/search.ts`.
 
 ```ts
 import { Command } from "commander";
-import { searchMukaku } from "../client.js";
+import { fetchRawSearchResponse, searchMukaku } from "../client.js";
 import { normalizeSearchItems } from "../normalize.js";
 import { printSearchResults } from "../output.js";
 
@@ -685,13 +695,13 @@ export function registerSearchCommand(program: Command): void {
           throw new Error("--page must be a positive integer");
         }
 
-        const response = await searchMukaku({ query, page, limit });
-
         if (options.raw) {
-          console.log(JSON.stringify(response, null, 2));
+          const rawResponse = await fetchRawSearchResponse({ query, page, limit });
+          console.log(JSON.stringify(rawResponse, null, 2));
           return;
         }
 
+        const response = await searchMukaku({ query, page, limit });
         const results = normalizeSearchItems(response.data.data).slice(0, limit);
 
         if (options.json) {

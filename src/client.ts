@@ -10,22 +10,29 @@ export interface SearchParams {
   limit: number;
 }
 
-export async function searchMukaku(params: SearchParams): Promise<SearchResponse> {
+function buildSearchUrl(params: SearchParams): URL {
   const url = new URL("/prod/api/v1/getVideoList", MUKAKU_BASE_URL);
   url.searchParams.set("sb", params.query);
   url.searchParams.set("page", String(params.page));
   url.searchParams.set("limit", String(params.limit));
   url.searchParams.set("app_id", APP_ID);
   url.searchParams.set("identity", IDENTITY);
+  return url;
+}
 
-  const response = await fetch(url);
+export async function fetchRawSearchResponse(params: SearchParams): Promise<unknown> {
+  const response = await fetch(buildSearchUrl(params));
 
   if (!response.ok) {
     throw new Error(`Mukaku request failed: HTTP ${response.status}`);
   }
 
-  const json = await response.json();
-  const parsed = searchResponseSchema.safeParse(json);
+  return response.json();
+}
+
+export async function searchMukaku(params: SearchParams): Promise<SearchResponse> {
+  const rawResponse = await fetchRawSearchResponse(params);
+  const parsed = searchResponseSchema.safeParse(rawResponse);
 
   if (!parsed.success) {
     throw new Error(`Mukaku response shape changed: ${parsed.error.message}`);
