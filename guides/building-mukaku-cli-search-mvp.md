@@ -551,51 +551,62 @@ function formatScore(label: string, value: number | undefined): string | undefin
   return value === undefined ? undefined : `${label} ${value}`;
 }
 
-export function printSearchResults(results: MukakuSearchItem[]): void {
+export function formatSearchResults(results: MukakuSearchItem[]): string {
   if (results.length === 0) {
-    console.log("No results found.");
-    return;
+    return "No results found.";
   }
 
-  for (const [index, result] of results.entries()) {
-    const headingParts = [
-      `${index + 1}. ${result.title}`,
-      result.year ? `(${result.year})` : undefined,
-      result.quality,
-      result.episodeStatus,
-    ].filter(Boolean);
+  return results
+    .map((result, index) => {
+      const lines: string[] = [];
 
-    console.log(headingParts.join(" "));
+      const headingParts = [
+        `${index + 1}. ${result.title}`,
+        result.year ? `(${result.year})` : undefined,
+        result.quality,
+        result.episodeStatus,
+      ].filter(Boolean);
 
-    if (result.originalTitle) {
-      console.log(`   Original: ${result.originalTitle}`);
-    }
+      lines.push(headingParts.join(" "));
 
-    const scores = [
-      formatScore("Douban", result.doubanScore),
-      formatScore("IMDb", result.imdbScore),
-    ].filter(Boolean);
+      if (result.originalTitle) {
+        lines.push(`   Original: ${result.originalTitle}`);
+      }
 
-    if (scores.length > 0) {
-      console.log(`   Rating: ${scores.join(" / ")}`);
-    }
+      const scores = [
+        formatScore("豆瓣", result.doubanScore),
+        formatScore("IMDb", result.imdbScore),
+      ].filter(Boolean);
 
-    const meta = [
-      result.type,
-      result.productionArea,
-      result.categories.length > 0 ? result.categories.join(", ") : undefined,
-    ].filter(Boolean);
+      if (scores.length > 0) {
+        lines.push(`   Rating: ${scores.join(" / ")}`);
+      }
 
-    if (meta.length > 0) {
-      console.log(`   Meta: ${meta.join(" | ")}`);
-    }
+      const meta = [
+        result.type,
+        result.productionArea,
+        result.categories.length > 0 ? result.categories.join(", ") : undefined,
+      ].filter(Boolean);
 
-    if (result.detailUrl) {
-      console.log(`   URL: ${result.detailUrl}`);
-    }
+      if (meta.length > 0) {
+        lines.push(`   Meta: ${meta.join(" | ")}`);
+      }
 
-    console.log();
-  }
+      if (result.detailUrl) {
+        lines.push(`   资源 URL: ${result.detailUrl}`);
+      }
+
+      if (result.doubanUrl) {
+        lines.push(`   豆瓣 URL: ${result.doubanUrl}`);
+      }
+
+      return lines.join("\n");
+    })
+    .join("\n\n");
+}
+
+export function printSearchResults(results: MukakuSearchItem[]): void {
+  console.log(formatSearchResults(results));
 }
 ```
 
@@ -604,6 +615,7 @@ Why:
 - Human output should be scannable.
 - It should not dump every field.
 - It should include enough detail for a person to choose a result.
+- `formatSearchResults` is pure and easy to test; `printSearchResults` is the only function that writes to the terminal.
 
 Checkpoint:
 
@@ -620,7 +632,7 @@ Expected:
 Quick manual check:
 
 ```bash
-pnpm exec tsx -e "import { printSearchResults } from './src/output.ts'; printSearchResults([{ title: '阿凡达', originalTitle: 'Avatar', year: 2009, type: 'movie', doubanScore: 8.8, imdbScore: 7.9, quality: '4K蓝光', categories: ['动作', '科幻'], productionArea: '美国', definitions: [], detailUrl: 'https://web5.mukaku.com/mv/1652587' }])"
+pnpm exec tsx -e "import { printSearchResults } from './src/output.ts'; printSearchResults([{ title: '阿凡达', originalTitle: 'Avatar', year: 2009, type: 'movie', doubanScore: 8.8, imdbScore: 7.9, quality: '4K蓝光', categories: ['动作', '科幻'], productionArea: '美国', definitions: [], detailUrl: 'https://web5.mukaku.com/mv/1652587', doubanUrl: 'https://movie.douban.com/subject/1652587/' }])"
 ```
 
 Expected:
@@ -628,9 +640,10 @@ Expected:
 ```text
 1. 阿凡达 (2009) 4K蓝光
    Original: Avatar
-   Rating: Douban 8.8 / IMDb 7.9
+   Rating: 豆瓣 8.8 / IMDb 7.9
    Meta: movie | 美国 | 动作, 科幻
-   URL: https://web5.mukaku.com/mv/1652587
+   资源 URL: https://web5.mukaku.com/mv/1652587
+   豆瓣 URL: https://movie.douban.com/subject/1652587/
 ```
 
 ## 11. Implement The Search Command
