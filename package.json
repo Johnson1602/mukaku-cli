@@ -4,7 +4,7 @@
   "description": "A CLI for searching Mukaku movie and TV resources",
   "type": "module",
   "bin": {
-    "mukaku": "./dist/index.js"
+    "mukaku": "./dist/index.mjs"
   },
   "scripts": {
     "dev": "tsx src/index.ts",

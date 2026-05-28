@@ -81,7 +81,7 @@ Edit `package.json` into something like this:
   "description": "A CLI for searching Mukaku movie and TV resources",
   "type": "module",
   "bin": {
-    "mukaku": "./dist/index.js"
+    "mukaku": "./dist/index.mjs"
   },
   "scripts": {
     "dev": "tsx src/index.ts",
@@ -101,7 +101,7 @@ Important fields:
 - `type: "module"` means we use modern ESM imports.
 - `bin` is what makes this package expose a command named `mukaku`.
 - `dev` runs the CLI directly from TypeScript while developing.
-- `build` creates `dist/index.js`, which is what `bin` points to.
+- `build` creates `dist/index.mjs`, which is what `bin` points to.
 
 Checkpoint:
 
@@ -116,7 +116,7 @@ Expected:
 
 ```text
 mukaku-cli
-./dist/index.js
+./dist/index.mjs
 ```
 
 This confirms that the package name and CLI executable mapping are present.
@@ -755,8 +755,6 @@ The `.js` extension is correct in TypeScript when using `moduleResolution: "Node
 Create `src/index.ts`.
 
 ```ts
-#!/usr/bin/env node
-
 import { Command } from "commander";
 import { registerSearchCommand } from "./commands/search.js";
 
@@ -919,7 +917,7 @@ pnpm build
 Then run the built file:
 
 ```bash
-node dist/index.js search "阿凡达"
+node dist/index.mjs search "阿凡达"
 ```
 
 To test the package command locally:
@@ -932,7 +930,7 @@ mukaku search "阿凡达"
 If you do not want to link globally, you can also use:
 
 ```bash
-node dist/index.js search "阿凡达"
+node dist/index.mjs search "阿凡达"
 ```
 
 The important idea: `package.json` `bin` maps the command name `mukaku` to the built executable file.
@@ -943,13 +941,13 @@ Run:
 
 ```bash
 pnpm build
-head -n 1 dist/index.js
-node dist/index.js search "阿凡达" --limit 1
+head -n 1 dist/index.mjs
+node dist/index.mjs search "阿凡达" --limit 1
 ```
 
 Expected:
 
-- The first line of `dist/index.js` should be `#!/usr/bin/env node`.
+- The first line of `dist/index.mjs` should be `#!/usr/bin/env node`.
 - The built CLI should print one result.
 
 Then run:
