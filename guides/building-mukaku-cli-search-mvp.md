@@ -17,6 +17,7 @@ src/
   index.ts       CLI entrypoint and command parsing
   commands/
     search.ts    Search command implementation
+  constants.ts   Shared Mukaku constants
   client.ts      Mukaku HTTP calls
   normalize.ts   Raw API data -> stable CLI data
   output.ts      Human-readable output
@@ -282,6 +283,7 @@ export interface MukakuSearchItem {
   year?: number;
   type: "movie" | "tv" | "unknown";
   doubanId?: number;
+  doubanUrl?: string;
   doubanScore?: number;
   imdbId?: string;
   imdbScore?: number;
@@ -318,14 +320,42 @@ Then intentionally break one thing for learning: change `title: string;` in `Muk
 
 This shows an important idea: type definitions become useful when implementation code starts using them.
 
-## 7. Implement The HTTP Client
+## 7. Add Shared Constants
+
+Create `src/constants.ts`.
+
+```ts
+export const MUKAKU_BASE_URL = "https://web5.mukaku.com";
+```
+
+Why this file exists:
+
+- The base URL is used by both `client.ts` and `normalize.ts`.
+- Keeping it in one place prevents accidental drift.
+- The `MUKAKU_` prefix makes the constant specific instead of vague.
+
+Checkpoint:
+
+Run:
+
+```bash
+pnpm typecheck
+```
+
+Expected:
+
+- TypeScript should pass.
+
+At this point the file is not imported anywhere yet, so this checkpoint only confirms the new module is syntactically valid.
+
+## 8. Implement The HTTP Client
 
 Create `src/client.ts`.
 
 ```ts
+import { MUKAKU_BASE_URL } from "./constants.js";
 import { searchResponseSchema, type SearchResponse } from "./types.js";
 
-const BASE_URL = "https://web5.mukaku.com";
 const APP_ID = "83768d9ad4";
 const IDENTITY = "23734adac0301bccdcb107c4aa21f96c";
 
@@ -336,7 +366,7 @@ export interface SearchParams {
 }
 
 export async function searchMukaku(params: SearchParams): Promise<SearchResponse> {
-  const url = new URL("/prod/api/v1/getVideoList", BASE_URL);
+  const url = new URL("/prod/api/v1/getVideoList", MUKAKU_BASE_URL);
   url.searchParams.set("sb", params.query);
   url.searchParams.set("page", String(params.page));
   url.searchParams.set("limit", String(params.limit));
@@ -401,22 +431,21 @@ true
 
 This confirms the upstream endpoint is reachable before our CLI calls it.
 
-## 8. Normalize The Data
+## 9. Normalize The Data
 
 Create `src/normalize.ts`.
 
 ```ts
+import { MUKAKU_BASE_URL } from "./constants.js";
 import type { MukakuSearchItem, RawMukakuItem } from "./types.js";
 
-const BASE_URL = "https://web5.mukaku.com";
-
-function blankToUndefined(value: string | undefined): string | undefined {
+function cleanOptionalString(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
 }
 
-function parseNumber(value: string | undefined): number | undefined {
-  const text = blankToUndefined(value);
+function parsePositiveNumber(value: string | undefined): number | undefined {
+  const text = cleanOptionalString(value);
   if (!text) return undefined;
 
   const number = Number(text);
@@ -424,7 +453,7 @@ function parseNumber(value: string | undefined): number | undefined {
 }
 
 function parseYear(value: string | undefined): number | undefined {
-  const text = blankToUndefined(value);
+  const text = cleanOptionalString(value);
   if (!text) return undefined;
 
   const year = Number(text);
@@ -432,7 +461,7 @@ function parseYear(value: string | undefined): number | undefined {
 }
 
 function parseCsv(value: string | undefined): string[] {
-  return blankToUndefined(value)
+  return cleanOptionalString(value)
     ?.split(",")
     .map((item) => item.trim())
     .filter(Boolean) ?? [];
@@ -444,31 +473,32 @@ function mapType(type: number | undefined): MukakuSearchItem["type"] {
   return "unknown";
 }
 
-export function normalizeSearchResult(item: RawMukakuItem): MukakuSearchItem {
+export function normalizeSearchItem(item: RawMukakuItem): MukakuSearchItem {
   const doubanId = item.doub_id;
 
   return {
-    title: blankToUndefined(item.title) ?? "未知标题",
-    originalTitle: blankToUndefined(item.otitle),
+    title: cleanOptionalString(item.title) ?? "未知标题",
+    originalTitle: cleanOptionalString(item.otitle),
     year: parseYear(item.years),
     type: mapType(item.type),
     doubanId,
-    doubanScore: parseNumber(item.doub_score),
-    imdbId: blankToUndefined(item.IMDB_number),
-    imdbScore: parseNumber(item.IMDB_score),
-    quality: blankToUndefined(item.zqxd),
-    episodeStatus: blankToUndefined(item.ejs),
+    doubanUrl: doubanId ? `https://movie.douban.com/subject/${doubanId}/` : undefined,
+    doubanScore: parsePositiveNumber(item.doub_score),
+    imdbId: cleanOptionalString(item.IMDB_number),
+    imdbScore: parsePositiveNumber(item.IMDB_score),
+    quality: cleanOptionalString(item.zqxd),
+    episodeStatus: cleanOptionalString(item.ejs),
     categories: parseCsv(item.class),
-    productionArea: blankToUndefined(item.production_area),
+    productionArea: cleanOptionalString(item.production_area),
     definitions: parseCsv(item.definition),
-    seedUpdatedAt: blankToUndefined(item.seed_updated_at),
-    image: blankToUndefined(item.image),
-    detailUrl: doubanId ? `${BASE_URL}/mv/${doubanId}` : undefined,
+    seedUpdatedAt: cleanOptionalString(item.seed_updated_at),
+    image: cleanOptionalString(item.image),
+    detailUrl: doubanId ? `${MUKAKU_BASE_URL}/mv/${doubanId}` : undefined,
   };
 }
 
-export function normalizeSearchResults(items: RawMukakuItem[]): MukakuSearchItem[] {
-  return items.map(normalizeSearchResult);
+export function normalizeSearchItems(items: RawMukakuItem[]): MukakuSearchItem[] {
+  return items.map(normalizeSearchItem);
 }
 ```
 
@@ -476,6 +506,7 @@ Why this file exists:
 
 - The API says `doub_score`; our CLI says `doubanScore`.
 - The API gives numeric fields as strings; our CLI gives numbers.
+- Mukaku often uses `"0"` for missing scores, so `parsePositiveNumber` treats zero as absent.
 - The API gives comma-separated strings; our CLI gives arrays.
 - The API can return blanks; our CLI uses `undefined`.
 
@@ -498,7 +529,7 @@ Quick manual check:
 Create a temporary scratch file only if you want to inspect the function before tests exist:
 
 ```bash
-pnpm exec tsx -e "import { normalizeSearchResult } from './src/normalize.ts'; console.log(normalizeSearchResult({ title: '阿凡达', type: 1, doub_id: 1652587, doub_score: '8.8', years: '2009', class: '动作,科幻' }))"
+pnpm exec tsx -e "import { normalizeSearchItem } from './src/normalize.ts'; console.log(normalizeSearchItem({ title: '阿凡达', type: 1, doub_id: 1652587, doub_score: '8.8', years: '2009', class: '动作,科幻' }))"
 ```
 
 Expected:
@@ -506,9 +537,10 @@ Expected:
 - `type` becomes `movie`.
 - `doubanScore` becomes `8.8` as a number.
 - `categories` becomes `["动作", "科幻"]`.
+- `doubanUrl` becomes `https://movie.douban.com/subject/1652587/`.
 - `detailUrl` becomes `https://web5.mukaku.com/mv/1652587`.
 
-## 9. Render Human Output
+## 10. Render Human Output
 
 Create `src/output.ts`.
 
@@ -601,14 +633,14 @@ Expected:
    URL: https://web5.mukaku.com/mv/1652587
 ```
 
-## 10. Implement The Search Command
+## 11. Implement The Search Command
 
 Create `src/commands/search.ts`.
 
 ```ts
 import { Command } from "commander";
 import { searchMukaku } from "../client.js";
-import { normalizeSearchResults } from "../normalize.js";
+import { normalizeSearchItems } from "../normalize.js";
 import { printSearchResults } from "../output.js";
 
 interface SearchOptions {
@@ -647,7 +679,7 @@ export function registerSearchCommand(program: Command): void {
           return;
         }
 
-        const results = normalizeSearchResults(response.data.data).slice(0, limit);
+        const results = normalizeSearchItems(response.data.data).slice(0, limit);
 
         if (options.json) {
           console.log(JSON.stringify(results, null, 2));
@@ -689,13 +721,13 @@ If TypeScript complains about imports, check that `search.ts` uses:
 
 ```ts
 import { searchMukaku } from "../client.js";
-import { normalizeSearchResults } from "../normalize.js";
+import { normalizeSearchItems } from "../normalize.js";
 import { printSearchResults } from "../output.js";
 ```
 
 The `.js` extension is correct in TypeScript when using `moduleResolution: "NodeNext"` because the emitted JavaScript will import `.js` files.
 
-## 11. Implement The CLI Entrypoint
+## 12. Implement The CLI Entrypoint
 
 Create `src/index.ts`.
 
@@ -773,7 +805,7 @@ Expected:
 
 - You should see `--limit`, `--page`, `--json`, and `--raw`.
 
-## 12. Try It In Development
+## 13. Try It In Development
 
 Run:
 
@@ -832,7 +864,7 @@ Expected:
 
 - Output should be valid JSON.
 - It should contain `"title": "阿凡达"`.
-- It should contain normalized fields like `originalTitle`, `doubanScore`, and `detailUrl`.
+- It should contain normalized fields like `originalTitle`, `doubanScore`, and `detailUrl`, and `doubanUrl`.
 
 Run:
 
@@ -855,7 +887,7 @@ Expected:
 - The command should print `Error: --limit must be a positive integer`.
 - The command should exit as a failure.
 
-## 13. Build The CLI
+## 14. Build The CLI
 
 ```bash
 pnpm build
@@ -908,17 +940,17 @@ Expected:
 
 - The command name `mukaku` should work from your shell.
 
-## 14. Add A Normalization Test
+## 15. Add A Normalization Test
 
 Create `test/normalize.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { normalizeSearchResult } from "../src/normalize.js";
+import { normalizeSearchItem } from "../src/normalize.js";
 
-describe("normalizeSearchResult", () => {
+describe("normalizeSearchItem", () => {
   it("turns a raw Mukaku item into a stable search result", () => {
-    const result = normalizeSearchResult({
+    const result = normalizeSearchItem({
       type: 1,
       title: "阿凡达",
       otitle: "Avatar",
@@ -941,6 +973,7 @@ describe("normalizeSearchResult", () => {
       year: 2009,
       type: "movie",
       doubanId: 1652587,
+      doubanUrl: "https://movie.douban.com/subject/1652587/",
       doubanScore: 8.8,
       imdbId: "tt0499549",
       imdbScore: 7.9,
@@ -989,7 +1022,7 @@ Expected:
 
 Change the code back after seeing the failure. This proves the test is protecting real behavior.
 
-## 15. Common CLI Design Rules To Notice
+## 16. Common CLI Design Rules To Notice
 
 ### Commands express user intent
 
@@ -1036,7 +1069,7 @@ Mukaku can call a field `doub_score`; our CLI can call it `doubanScore`.
 
 That translation is not decorative. It is what makes the CLI useful.
 
-## 16. What The MVP Should Not Do Yet
+## 17. What The MVP Should Not Do Yet
 
 For the first version, avoid:
 
@@ -1062,7 +1095,7 @@ mukaku detail 1652587 --json
 mukaku resources 1652587 --quality "4K蓝光" --json
 ```
 
-## 17. Final Mental Model
+## 18. Final Mental Model
 
 A CLI is just a program with a text interface.
 
@@ -1074,6 +1107,9 @@ index.ts
 
 commands/search.ts
   understands the user's search command
+
+constants.ts
+  stores shared Mukaku constants
 
 client.ts
   understands Mukaku's HTTP API

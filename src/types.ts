@@ -37,6 +37,7 @@ export interface MukakuSearchItem {
   year?: number;
   type: "movie" | "tv" | "unknown";
   doubanId?: number;
+  doubanUrl?: string;
   doubanScore?: number;
   imdbId?: string;
   imdbScore?: number;

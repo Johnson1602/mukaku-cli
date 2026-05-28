@@ -1,6 +1,6 @@
+import { MUKAKU_BASE_URL } from "./constants.js";
 import { searchResponseSchema, type SearchResponse } from "./types.js";
 
-const BASE_URL = "https://web5.mukaku.com";
 const APP_ID = "83768d9ad4";
 const IDENTITY = "23734adac0301bccdcb107c4aa21f96c";
 
@@ -11,7 +11,7 @@ export interface SearchParams {
 }
 
 export async function searchMukaku(params: SearchParams): Promise<SearchResponse> {
-  const url = new URL("/prod/api/v1/getVideoList", BASE_URL);
+  const url = new URL("/prod/api/v1/getVideoList", MUKAKU_BASE_URL);
   url.searchParams.set("sb", params.query);
   url.searchParams.set("page", String(params.page));
   url.searchParams.set("limit", String(params.limit));
