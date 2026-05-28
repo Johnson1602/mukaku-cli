@@ -233,11 +233,11 @@ const BASE_URL = "https://web5.mukaku.com";
 const APP_ID = "83768d9ad4";
 const IDENTITY = "23734adac0301bccdcb107c4aa21f96c";
 
-export type SearchParams = {
+export interface SearchParams {
   query: string;
   page: number;
   limit: number;
-};
+}
 
 export async function searchMukaku(params: SearchParams): Promise<SearchResponse> {
   const url = new URL("/prod/api/v1/getVideoList", BASE_URL);
@@ -432,12 +432,12 @@ import { searchMukaku } from "../client.js";
 import { normalizeSearchResults } from "../normalize.js";
 import { printSearchResults } from "../output.js";
 
-type SearchOptions = {
+interface SearchOptions {
   limit: string;
   page: string;
   json?: boolean;
   raw?: boolean;
-};
+}
 
 export function registerSearchCommand(program: Command): void {
   program
