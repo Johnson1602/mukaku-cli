@@ -1,6 +1,6 @@
 {
   "name": "mukaku-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A CLI for searching Mukaku movie and TV resources",
   "type": "module",
   "bin": {

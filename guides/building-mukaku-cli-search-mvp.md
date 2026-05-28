@@ -169,7 +169,8 @@ Create `tsconfig.json`:
     "forceConsistentCasingInFileNames": true,
     "rootDir": ".",
     "outDir": "dist",
-    "types": ["node"]
+    "types": ["node"],
+    "resolveJsonModule": true
   },
   "include": ["src", "test"]
 }
@@ -181,6 +182,7 @@ Why:
 - `NodeNext` matches Node ESM behavior.
 - `rootDir: "."` tells TypeScript that both `src` and `test` belong to this project. Newer TypeScript versions ask for this explicitly when `outDir` is set.
 - `types: ["node"]` loads Node globals like `process`.
+- `resolveJsonModule: true` allows `index.ts` to import `package.json` for the CLI version.
 - `include` keeps TypeScript focused on source and tests.
 
 Checkpoint:
@@ -768,6 +770,7 @@ Create `src/index.ts`.
 
 ```ts
 import { Command } from "commander";
+import packageJson from "../package.json" with { type: "json" };
 import { registerSearchCommand } from "./commands/search.js";
 
 const program = new Command();
@@ -775,7 +778,7 @@ const program = new Command();
 program
   .name("mukaku")
   .description("Search Mukaku movie and TV resources")
-  .version("0.1.0");
+  .version(packageJson.version);
 
 registerSearchCommand(program);
 
