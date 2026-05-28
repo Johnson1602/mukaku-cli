@@ -1,6 +1,6 @@
 import type { MukakuSearchItem } from "./types.js";
 
-function formatScore(label: string, value: number | undefined): string | undefined {
+function formatScore(label: string, value: number | undefined) {
   return value === undefined ? undefined : `${label} ${value}`;
 }
 

@@ -1,12 +1,12 @@
 import { MUKAKU_BASE_URL } from "./constants.js";
 import type { MukakuSearchItem, RawMukakuItem } from "./types.js";
 
-function cleanOptionalString(value: string | undefined): string | undefined {
+function cleanOptionalString(value: string | undefined) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
 }
 
-function parsePositiveNumber(value: string | undefined): number | undefined {
+function parsePositiveNumber(value: string | undefined) {
   const text = cleanOptionalString(value);
   if (!text) return undefined;
 
@@ -14,7 +14,7 @@ function parsePositiveNumber(value: string | undefined): number | undefined {
   return Number.isFinite(number) && number > 0 ? number : undefined;
 }
 
-function parseYear(value: string | undefined): number | undefined {
+function parseYear(value: string | undefined) {
   const text = cleanOptionalString(value);
   if (!text) return undefined;
 
@@ -22,7 +22,7 @@ function parseYear(value: string | undefined): number | undefined {
   return Number.isInteger(year) ? year : undefined;
 }
 
-function parseCsv(value: string | undefined): string[] {
+function parseCsv(value: string | undefined) {
   return cleanOptionalString(value)
     ?.split(",")
     .map((item) => item.trim())

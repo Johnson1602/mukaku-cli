@@ -10,7 +10,7 @@ export interface SearchParams {
   limit: number;
 }
 
-function buildSearchUrl(params: SearchParams): URL {
+function buildSearchUrl(params: SearchParams) {
   const url = new URL("/prod/api/v1/getVideoList", MUKAKU_BASE_URL);
   url.searchParams.set("sb", params.query);
   url.searchParams.set("page", String(params.page));

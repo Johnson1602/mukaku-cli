@@ -10,7 +10,7 @@ interface SearchOptions {
   raw?: boolean;
 }
 
-function parsePositiveInteger(value: string): number {
+function parsePositiveInteger(value: string) {
   const parsed = Number(value);
 
   if (!Number.isInteger(parsed) || parsed <= 0) {
