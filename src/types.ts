@@ -25,7 +25,7 @@ export const searchResponseSchema = z.object({
   code: z.number().optional(),
   data: z.object({
     data: z.array(rawMukakuItemSchema),
-  }),
+  }).optional(),
 });
 
 export const rawTorrentResourceSchema = z.object({
@@ -55,14 +55,18 @@ export const videoDetailResponseSchema = z.object({
   success: z.boolean(),
   message: z.string().optional(),
   code: z.number().optional(),
-  data: rawVideoDetailSchema,
+  data: rawVideoDetailSchema.optional(),
 });
 
 export type RawMukakuItem = z.infer<typeof rawMukakuItemSchema>;
 export type RawTorrentResource = z.infer<typeof rawTorrentResourceSchema>;
 export type RawVideoDetail = z.infer<typeof rawVideoDetailSchema>;
-export type SearchResponse = z.infer<typeof searchResponseSchema>;
-export type VideoDetailResponse = z.infer<typeof videoDetailResponseSchema>;
+export type SearchResponse = z.infer<typeof searchResponseSchema> & {
+  data: { data: RawMukakuItem[] };
+};
+export type VideoDetailResponse = z.infer<typeof videoDetailResponseSchema> & {
+  data: RawVideoDetail;
+};
 export type MukakuMediaType = "movie" | "tv" | "unknown";
 
 export interface MukakuSearchItem {

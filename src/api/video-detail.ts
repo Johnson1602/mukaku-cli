@@ -29,5 +29,10 @@ export async function getVideoDetail(
     throw new Error(parsed.data.message ?? "Mukaku detail request failed");
   }
 
-  return parsed.data;
+  const data = parsed.data.data;
+  if (!data) {
+    throw new Error("Mukaku detail response is missing data");
+  }
+
+  return { ...parsed.data, data };
 }

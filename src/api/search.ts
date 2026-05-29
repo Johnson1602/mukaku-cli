@@ -29,5 +29,10 @@ export async function searchMukaku(params: SearchParams): Promise<SearchResponse
     throw new Error(parsed.data.message ?? "Mukaku search failed");
   }
 
-  return parsed.data;
+  const data = parsed.data.data;
+  if (!data) {
+    throw new Error("Mukaku search response is missing data");
+  }
+
+  return { ...parsed.data, data };
 }
