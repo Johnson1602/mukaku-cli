@@ -61,12 +61,6 @@ export const videoDetailResponseSchema = z.object({
 export type RawMukakuItem = z.infer<typeof rawMukakuItemSchema>;
 export type RawTorrentResource = z.infer<typeof rawTorrentResourceSchema>;
 export type RawVideoDetail = z.infer<typeof rawVideoDetailSchema>;
-export type SearchResponse = z.infer<typeof searchResponseSchema> & {
-  data: { data: RawMukakuItem[] };
-};
-export type VideoDetailResponse = z.infer<typeof videoDetailResponseSchema> & {
-  data: RawVideoDetail;
-};
 export type MukakuMediaType = "movie" | "tv" | "unknown";
 
 export interface MukakuSearchItem {
@@ -89,7 +83,7 @@ export interface MukakuSearchItem {
   detailUrl?: string;
 }
 
-export interface ResourcesResult {
+interface MukakuResourceSummary {
   doubanId: number;
   mukakuId?: number;
   title: string;
@@ -97,11 +91,18 @@ export interface ResourcesResult {
   year?: number;
   type: MukakuMediaType;
   totalCount: number;
+  availableQualities: string[];
+  resources: TorrentResource[];
+}
+
+export interface MukakuVideoDetail extends MukakuResourceSummary {
+  resourcesByQuality: Record<string, TorrentResource[]>;
+}
+
+export interface ResourcesResult extends MukakuResourceSummary {
   matchingCount: number;
   returnedCount: number;
   filters: ResourcesFilters;
-  availableQualities: string[];
-  resources: TorrentResource[];
 }
 
 export interface TorrentResource {

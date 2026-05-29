@@ -1,5 +1,6 @@
 import { buildApiUrl, fetchJson } from "./http.js";
-import { searchResponseSchema, type SearchResponse } from "../types.js";
+import { normalizeSearchItems } from "../normalize.js";
+import { searchResponseSchema, type MukakuSearchItem } from "../types.js";
 
 interface SearchParams {
   query: string;
@@ -17,7 +18,7 @@ export async function fetchRawSearchResponse(params: SearchParams): Promise<unkn
   );
 }
 
-export async function searchMukaku(params: SearchParams): Promise<SearchResponse> {
+export async function searchMukaku(params: SearchParams): Promise<MukakuSearchItem[]> {
   const rawResponse = await fetchRawSearchResponse(params);
   const parsed = searchResponseSchema.safeParse(rawResponse);
 
@@ -34,5 +35,5 @@ export async function searchMukaku(params: SearchParams): Promise<SearchResponse
     throw new Error("Mukaku search response is missing data");
   }
 
-  return { ...parsed.data, data };
+  return normalizeSearchItems(data.data);
 }

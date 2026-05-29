@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildResourcesResult,
   normalizeSearchItem,
+  normalizeVideoDetail,
 } from "./normalize.js";
 import type { RawVideoDetail } from "./types.js";
 
@@ -127,7 +128,7 @@ const rawDetail: RawVideoDetail = {
 
 describe("buildResourcesResult", () => {
   it("uses all_seeds order for the default resource list", () => {
-    const result = buildResourcesResult(rawDetail);
+    const result = buildResourcesResult(normalizeVideoDetail(rawDetail));
 
     expect(result.resources).toEqual([
       {
@@ -167,7 +168,7 @@ describe("buildResourcesResult", () => {
   });
 
   it("derives metadata and counts without a default limit", () => {
-    const result = buildResourcesResult(rawDetail);
+    const result = buildResourcesResult(normalizeVideoDetail(rawDetail));
 
     expect(result).toMatchObject({
       doubanId: 35517044,
@@ -186,7 +187,9 @@ describe("buildResourcesResult", () => {
   });
 
   it("filters by exact quality", () => {
-    const result = buildResourcesResult(rawDetail, { quality: "WEB-4K" });
+    const result = buildResourcesResult(normalizeVideoDetail(rawDetail), {
+      quality: "WEB-4K",
+    });
 
     expect(result.totalCount).toBe(3);
     expect(result.matchingCount).toBe(2);
@@ -198,13 +201,13 @@ describe("buildResourcesResult", () => {
   });
 
   it("fails unknown quality with available qualities", () => {
-    expect(() => buildResourcesResult(rawDetail, { quality: "BluRay" })).toThrow(
-      'Unknown quality "BluRay". Available qualities: WEB-4K, 杜比视界',
-    );
+    expect(() =>
+      buildResourcesResult(normalizeVideoDetail(rawDetail), { quality: "BluRay" }),
+    ).toThrow('Unknown quality "BluRay". Available qualities: WEB-4K, 杜比视界');
   });
 
   it("applies numeric limit after filtering", () => {
-    const result = buildResourcesResult(rawDetail, {
+    const result = buildResourcesResult(normalizeVideoDetail(rawDetail), {
       quality: "WEB-4K",
       limit: 1,
     });

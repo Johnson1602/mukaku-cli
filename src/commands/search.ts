@@ -1,6 +1,5 @@
 import { Command } from "commander";
 import { fetchRawSearchResponse, searchMukaku } from "../api/search.js";
-import { normalizeSearchItems } from "../normalize.js";
 import { parsePositiveInteger } from "../options.js";
 import { printSearchResults } from "../output.js";
 
@@ -50,7 +49,7 @@ export function registerSearchCommand(program: Command): void {
           page: options.page,
           limit: options.limit,
         });
-        const results = normalizeSearchItems(response.data.data).slice(0, options.limit);
+        const results = response.slice(0, options.limit);
 
         if (options.json) {
           console.log(JSON.stringify(results, null, 2));

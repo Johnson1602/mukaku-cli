@@ -1,5 +1,6 @@
 import { buildApiUrl, fetchJson } from "./http.js";
-import { videoDetailResponseSchema, type VideoDetailResponse } from "../types.js";
+import { normalizeVideoDetail } from "../normalize.js";
+import { videoDetailResponseSchema, type MukakuVideoDetail } from "../types.js";
 
 interface VideoDetailParams {
   doubanId: number;
@@ -17,7 +18,7 @@ export async function fetchRawVideoDetailResponse(
 
 export async function getVideoDetail(
   params: VideoDetailParams,
-): Promise<VideoDetailResponse> {
+): Promise<MukakuVideoDetail> {
   const rawResponse = await fetchRawVideoDetailResponse(params);
   const parsed = videoDetailResponseSchema.safeParse(rawResponse);
 
@@ -34,5 +35,5 @@ export async function getVideoDetail(
     throw new Error("Mukaku detail response is missing data");
   }
 
-  return { ...parsed.data, data };
+  return normalizeVideoDetail(data);
 }

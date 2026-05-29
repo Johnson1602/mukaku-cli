@@ -6,6 +6,7 @@ import {
 import type {
   MukakuMediaType,
   MukakuSearchItem,
+  MukakuVideoDetail,
   RawMukakuItem,
   RawTorrentResource,
   RawVideoDetail,
@@ -128,29 +129,18 @@ export function normalizeSearchItem(item: RawMukakuItem): MukakuSearchItem {
   };
 }
 
-export function buildResourcesResult(
-  detail: RawVideoDetail,
-  filters: ResourcesFilters = {},
-): ResourcesResult {
-  const availableQualities = Object.keys(detail.ecca ?? {});
-  const totalCount = detail.all_seeds?.length ?? Object.values(detail.ecca ?? {}).reduce(
-    (count, resources) => count + resources.length,
+export function normalizeVideoDetail(detail: RawVideoDetail): MukakuVideoDetail {
+  const resourcesByQuality = Object.fromEntries(
+    Object.entries(detail.ecca ?? {}).map(([quality, resources]) => [
+      quality,
+      resources.map(normalizeTorrentResource),
+    ]),
+  );
+  const resources = (detail.all_seeds ?? []).map(normalizeTorrentResource);
+  const groupedResourceCount = Object.values(resourcesByQuality).reduce(
+    (count, qualityResources) => count + qualityResources.length,
     0,
   );
-
-  if (filters.quality && !availableQualities.includes(filters.quality)) {
-    throw new Error(
-      `Unknown quality "${filters.quality}". Available qualities: ${availableQualities.join(", ") || "none"}`,
-    );
-  }
-
-  const rawResources = filters.quality
-    ? detail.ecca?.[filters.quality] ?? []
-    : detail.all_seeds ?? [];
-  const normalizedResources = rawResources.map(normalizeTorrentResource);
-  const limitedResources = filters.limit
-    ? normalizedResources.slice(0, filters.limit)
-    : normalizedResources;
 
   return {
     doubanId: detail.doub_id,
@@ -159,11 +149,36 @@ export function buildResourcesResult(
     originalTitle: cleanOptionalString(detail.otitle),
     year: parseYear(detail.years),
     type: mapType(detail.type),
-    totalCount,
-    matchingCount: normalizedResources.length,
+    totalCount: resources.length || groupedResourceCount,
+    availableQualities: Object.keys(resourcesByQuality),
+    resources,
+    resourcesByQuality,
+  };
+}
+
+export function buildResourcesResult(
+  detail: MukakuVideoDetail,
+  filters: ResourcesFilters = {},
+): ResourcesResult {
+  if (filters.quality && !detail.availableQualities.includes(filters.quality)) {
+    throw new Error(
+      `Unknown quality "${filters.quality}". Available qualities: ${detail.availableQualities.join(", ") || "none"}`,
+    );
+  }
+
+  const matchingResources = filters.quality
+    ? detail.resourcesByQuality[filters.quality] ?? []
+    : detail.resources;
+  const limitedResources = filters.limit
+    ? matchingResources.slice(0, filters.limit)
+    : matchingResources;
+  const { resourcesByQuality: _resourcesByQuality, ...summary } = detail;
+
+  return {
+    ...summary,
+    matchingCount: matchingResources.length,
     returnedCount: limitedResources.length,
     filters,
-    availableQualities,
     resources: limitedResources,
   };
 }

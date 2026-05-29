@@ -46,7 +46,7 @@ export function registerResourcesCommand(program: Command): void {
         }
 
         const response = await getVideoDetail({ doubanId });
-        const result = buildResourcesResult(response.data, {
+        const result = buildResourcesResult(response, {
           quality: options.quality,
           limit: options.limit,
         });
