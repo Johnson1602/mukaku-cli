@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   buildResourcesResult,
   normalizeSearchItem,
-  normalizeTorrentResources,
 } from "./normalize.js";
 import type { RawVideoDetail } from "./types.js";
 
@@ -91,30 +90,50 @@ const rawDetail: RawVideoDetail = {
       },
     ],
   },
+  all_seeds: [
+    {
+      id: 1,
+      zname: "DV same day",
+      zsize: "90.4 GB",
+      zqxd: "杜比视界",
+      zlink: "magnet:?xt=urn:btih:dv",
+      down: "/prod/api/v1/down?id=1",
+      ezt: "2026-05-22",
+      new: true,
+      definition_group: "杜比视界",
+    },
+    {
+      zname: "WEB older partial",
+      zsize: "512 MB",
+      zqxd: "WEB-4K",
+      down: "/prod/api/v1/down?id=2",
+      ezt: "2026-05-20",
+      new: 0,
+      definition_group: "WEB-4K",
+    },
+    {
+      id: 3,
+      zname: "WEB newer",
+      zsize: "1.5 GB",
+      zqxd: "WEB-4K",
+      zlink: "magnet:?xt=urn:btih:web-newer",
+      down: "/prod/api/v1/down?id=3",
+      ezt: "2026-05-22",
+      new: 1,
+      definition_group: "WEB-4K",
+    },
+  ],
 };
 
-describe("normalizeTorrentResources", () => {
-  it("normalizes ecca into sorted torrent resources", () => {
-    const resources = normalizeTorrentResources(rawDetail);
+describe("buildResourcesResult", () => {
+  it("uses all_seeds order for the default resource list", () => {
+    const result = buildResourcesResult(rawDetail);
 
-    expect(resources).toEqual([
-      {
-        id: 3,
-        name: "WEB newer",
-        quality: "WEB-4K",
-        qualityGroup: "WEB-4K",
-        size: "1.5 GB",
-        sizeBytes: 1610612736,
-        magnetUrl: "magnet:?xt=urn:btih:web-newer",
-        torrentDownloadUrl: "https://web5.mukaku.com/prod/api/v1/down?id=3",
-        publishedAt: "2026-05-22",
-        isNew: true,
-      },
+    expect(result.resources).toEqual([
       {
         id: 1,
         name: "DV same day",
         quality: "杜比视界",
-        qualityGroup: "杜比视界",
         size: "90.4 GB",
         sizeBytes: 97066260890,
         magnetUrl: "magnet:?xt=urn:btih:dv",
@@ -126,7 +145,6 @@ describe("normalizeTorrentResources", () => {
         id: undefined,
         name: "WEB older partial",
         quality: "WEB-4K",
-        qualityGroup: "WEB-4K",
         size: "512 MB",
         sizeBytes: 536870912,
         magnetUrl: undefined,
@@ -134,11 +152,20 @@ describe("normalizeTorrentResources", () => {
         publishedAt: "2026-05-20",
         isNew: false,
       },
+      {
+        id: 3,
+        name: "WEB newer",
+        quality: "WEB-4K",
+        size: "1.5 GB",
+        sizeBytes: 1610612736,
+        magnetUrl: "magnet:?xt=urn:btih:web-newer",
+        torrentDownloadUrl: "https://web5.mukaku.com/prod/api/v1/down?id=3",
+        publishedAt: "2026-05-22",
+        isNew: true,
+      },
     ]);
   });
-});
 
-describe("buildResourcesResult", () => {
   it("derives metadata and counts without a default limit", () => {
     const result = buildResourcesResult(rawDetail);
 
@@ -164,7 +191,7 @@ describe("buildResourcesResult", () => {
     expect(result.totalCount).toBe(3);
     expect(result.matchingCount).toBe(2);
     expect(result.returnedCount).toBe(2);
-    expect(result.resources.map((resource) => resource.qualityGroup)).toEqual([
+    expect(result.resources.map((resource) => resource.quality)).toEqual([
       "WEB-4K",
       "WEB-4K",
     ]);

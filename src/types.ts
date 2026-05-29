@@ -29,25 +29,26 @@ export const searchResponseSchema = z.object({
 });
 
 export const rawTorrentResourceSchema = z.object({
-    id: z.number().optional(),
-    zname: z.string().optional(),
-    zsize: z.string().optional(),
-    zqxd: z.string().optional(),
-    zlink: z.string().optional(),
-    down: z.string().optional(),
-    ezt: z.string().optional(),
-    new: z.union([z.number(), z.boolean()]).optional(),
-    definition_group: z.string().optional(),
+  id: z.number().optional(),
+  zname: z.string().optional(),
+  zsize: z.string().optional(),
+  zqxd: z.string().optional(),
+  zlink: z.string().optional(),
+  down: z.string().optional(),
+  ezt: z.string().optional(),
+  new: z.union([z.number(), z.boolean()]).optional(),
+  definition_group: z.string().optional(),
 });
 
 export const rawVideoDetailSchema = z.object({
-    id: z.number().optional(),
-    type: z.number().optional(),
-    title: z.string(),
-    otitle: z.string().optional(),
-    doub_id: z.number(),
-    years: z.string().optional(),
-    ecca: z.record(z.string(), z.array(rawTorrentResourceSchema)).optional(),
+  id: z.number().optional(),
+  type: z.number().optional(),
+  title: z.string(),
+  otitle: z.string().optional(),
+  doub_id: z.number(),
+  years: z.string().optional(),
+  ecca: z.record(z.string(), z.array(rawTorrentResourceSchema)).optional(),
+  all_seeds: z.array(rawTorrentResourceSchema).optional(),
 });
 
 export const videoDetailResponseSchema = z.object({
@@ -103,7 +104,6 @@ export interface TorrentResource {
   id?: number;
   name: string;
   quality: string;
-  qualityGroup: string;
   size?: string;
   sizeBytes?: number;
   magnetUrl?: string;

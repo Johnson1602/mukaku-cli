@@ -3,6 +3,7 @@
 - Prefer `interface` for object shapes. Use `type` for unions, aliases, mapped types, and inferred schema types.
 - When an interface field references another local interface, prefer defining the parent interface first and the referenced child interfaces directly below it.
 - For functions, define local helpers before the parent or public workflow functions that call them.
+- Avoid simple one-line wrapper functions unless they name a meaningful domain concept, centralize repeated logic, or hide real complexity.
 - Only export functions, types, and constants that are consumed outside the module or are intentional public contracts.
 - Use explicit return types for exported functions, async client/API functions, and contract-facing mappers or formatters. Let TypeScript infer small local helper return types unless the annotation intentionally ties the helper to a domain type.
 - Keep command implementations in `src/commands/`.

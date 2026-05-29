@@ -1,4 +1,8 @@
-import { MUKAKU_BASE_URL } from "./constants.js";
+import {
+  MUKAKU_BASE_URL,
+  getDoubanUrl,
+  getMukakuDetailUrl,
+} from "./constants.js";
 import type {
   MukakuMediaType,
   MukakuSearchItem,
@@ -44,88 +48,24 @@ function mapType(type: number | undefined): MukakuMediaType {
   return "unknown";
 }
 
-function getAvailableQualities(detail: RawVideoDetail): string[] {
-  return Object.keys(detail.ecca ?? {});
-}
-
-function countTorrentResources(detail: RawVideoDetail) {
-  return Object.values(detail.ecca ?? {}).reduce(
-    (count, resources) => count + resources.length,
-    0,
-  );
-}
-
-function getMatchingTorrentResources(
-  detail: RawVideoDetail,
-  filters: ResourcesFilters,
-): TorrentResource[] {
-  if (!filters.quality) {
-    return normalizeTorrentResources(detail);
-  }
-
-  return sortTorrentResources(
-    normalizeTorrentResourceGroup(
-      detail.ecca?.[filters.quality] ?? [],
-      filters.quality,
-    ),
-  );
-}
-
-function normalizeTorrentResourceGroup(
-  resources: RawTorrentResource[],
-  qualityGroup: string,
-) {
-  return resources.map((resource, index) => ({
-    resource: normalizeTorrentResource(resource, qualityGroup),
-    index,
-  }));
-}
-
-function normalizeTorrentResource(
-  item: RawTorrentResource,
-  qualityGroup: string,
-): TorrentResource {
-  const quality = cleanOptionalString(item.zqxd) ?? qualityGroup;
+function normalizeTorrentResource(item: RawTorrentResource): TorrentResource {
+  const quality =
+    cleanOptionalString(item.definition_group) ??
+    cleanOptionalString(item.zqxd) ??
+    "unknown";
   const size = cleanOptionalString(item.zsize);
 
   return {
     id: item.id,
     name: cleanOptionalString(item.zname) ?? "未知资源",
     quality,
-    qualityGroup,
     size,
     sizeBytes: parseSizeBytes(size),
     magnetUrl: cleanOptionalString(item.zlink),
     torrentDownloadUrl: toAbsoluteUrl(item.down),
     publishedAt: cleanOptionalString(item.ezt),
-    isNew: isNewResource(item.new),
+    isNew: item.new === true || item.new === 1,
   };
-}
-
-function sortTorrentResources(
-  resources: { resource: TorrentResource; index: number }[],
-): TorrentResource[] {
-  return resources
-    .map((item, index) => ({ ...item, index }))
-    .sort(comparePublishedAtDescending)
-    .map((item) => item.resource);
-}
-
-function comparePublishedAtDescending(
-  left: { resource: TorrentResource; index: number },
-  right: { resource: TorrentResource; index: number },
-) {
-  const leftDate = left.resource.publishedAt;
-  const rightDate = right.resource.publishedAt;
-
-  if (leftDate && rightDate && leftDate !== rightDate) {
-    return rightDate.localeCompare(leftDate);
-  }
-
-  if (leftDate && !rightDate) return -1;
-  if (!leftDate && rightDate) return 1;
-
-  return left.index - right.index;
 }
 
 function parseSizeBytes(value: string | undefined) {
@@ -160,10 +100,6 @@ function toAbsoluteUrl(value: string | undefined) {
   return new URL(text, MUKAKU_BASE_URL).toString();
 }
 
-function isNewResource(value: RawTorrentResource["new"]) {
-  return value === true || value === 1;
-}
-
 export function normalizeSearchItems(items: RawMukakuItem[]): MukakuSearchItem[] {
   return items.map(normalizeSearchItem);
 }
@@ -177,7 +113,7 @@ export function normalizeSearchItem(item: RawMukakuItem): MukakuSearchItem {
     year: parseYear(item.years),
     type: mapType(item.type),
     doubanId,
-    doubanUrl: doubanId ? `https://movie.douban.com/subject/${doubanId}/` : undefined,
+    doubanUrl: doubanId ? getDoubanUrl(doubanId) : undefined,
     doubanScore: parsePositiveNumber(item.doub_score),
     imdbId: cleanOptionalString(item.IMDB_number),
     imdbScore: parsePositiveNumber(item.IMDB_score),
@@ -188,31 +124,19 @@ export function normalizeSearchItem(item: RawMukakuItem): MukakuSearchItem {
     definitions: parseCsv(item.definition),
     seedUpdatedAt: cleanOptionalString(item.seed_updated_at),
     image: cleanOptionalString(item.image),
-    detailUrl: doubanId ? `${MUKAKU_BASE_URL}/mv/${doubanId}` : undefined,
+    detailUrl: doubanId ? getMukakuDetailUrl(doubanId) : undefined,
   };
-}
-
-export function normalizeTorrentResources(
-  detail: RawVideoDetail,
-): TorrentResource[] {
-  const groupedResources = detail.ecca ?? {};
-  const indexedResources = Object.entries(groupedResources).flatMap(
-    ([qualityGroup, resources]) =>
-      normalizeTorrentResourceGroup(resources, qualityGroup),
-  );
-
-  return indexedResources
-    .map((item, index) => ({ ...item, index }))
-    .sort(comparePublishedAtDescending)
-    .map((item) => item.resource);
 }
 
 export function buildResourcesResult(
   detail: RawVideoDetail,
   filters: ResourcesFilters = {},
 ): ResourcesResult {
-  const availableQualities = getAvailableQualities(detail);
-  const totalCount = countTorrentResources(detail);
+  const availableQualities = Object.keys(detail.ecca ?? {});
+  const totalCount = detail.all_seeds?.length ?? Object.values(detail.ecca ?? {}).reduce(
+    (count, resources) => count + resources.length,
+    0,
+  );
 
   if (filters.quality && !availableQualities.includes(filters.quality)) {
     throw new Error(
@@ -220,10 +144,13 @@ export function buildResourcesResult(
     );
   }
 
-  const matchingResources = getMatchingTorrentResources(detail, filters);
-  const returnedResources = filters.limit
-    ? matchingResources.slice(0, filters.limit)
-    : matchingResources;
+  const rawResources = filters.quality
+    ? detail.ecca?.[filters.quality] ?? []
+    : detail.all_seeds ?? [];
+  const normalizedResources = rawResources.map(normalizeTorrentResource);
+  const limitedResources = filters.limit
+    ? normalizedResources.slice(0, filters.limit)
+    : normalizedResources;
 
   return {
     doubanId: detail.doub_id,
@@ -233,10 +160,10 @@ export function buildResourcesResult(
     year: parseYear(detail.years),
     type: mapType(detail.type),
     totalCount,
-    matchingCount: matchingResources.length,
-    returnedCount: returnedResources.length,
+    matchingCount: normalizedResources.length,
+    returnedCount: limitedResources.length,
     filters,
     availableQualities,
-    resources: returnedResources,
+    resources: limitedResources,
   };
 }
