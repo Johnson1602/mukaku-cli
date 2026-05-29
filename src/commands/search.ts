@@ -1,6 +1,7 @@
-import { Command, InvalidArgumentError } from "commander";
-import { fetchRawSearchResponse, searchMukaku } from "../client.js";
+import { Command } from "commander";
+import { fetchRawSearchResponse, searchMukaku } from "../api/search.js";
 import { normalizeSearchItems } from "../normalize.js";
+import { parsePositiveInteger } from "../options.js";
 import { printSearchResults } from "../output.js";
 
 interface SearchOptions {
@@ -10,14 +11,10 @@ interface SearchOptions {
   raw?: boolean;
 }
 
-function parsePositiveInteger(value: string) {
-  const parsed = Number(value);
-
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new InvalidArgumentError("must be a positive integer");
+function assertValidRawOptions(options: SearchOptions): void {
+  if (options.raw && options.json) {
+    throw new Error("--raw cannot be combined with --json");
   }
-
-  return parsed;
 }
 
 export function registerSearchCommand(program: Command): void {
@@ -36,6 +33,8 @@ export function registerSearchCommand(program: Command): void {
     .option("--raw", "print raw Mukaku API response")
     .action(async (query: string, options: SearchOptions) => {
       try {
+        assertValidRawOptions(options);
+
         if (options.raw) {
           const rawResponse = await fetchRawSearchResponse({
             query,

@@ -28,14 +28,47 @@ export const searchResponseSchema = z.object({
   }),
 });
 
+export const rawTorrentResourceSchema = z.object({
+    id: z.number().optional(),
+    zname: z.string().optional(),
+    zsize: z.string().optional(),
+    zqxd: z.string().optional(),
+    zlink: z.string().optional(),
+    down: z.string().optional(),
+    ezt: z.string().optional(),
+    new: z.union([z.number(), z.boolean()]).optional(),
+    definition_group: z.string().optional(),
+});
+
+export const rawVideoDetailSchema = z.object({
+    id: z.number().optional(),
+    type: z.number().optional(),
+    title: z.string(),
+    otitle: z.string().optional(),
+    doub_id: z.number(),
+    years: z.string().optional(),
+    ecca: z.record(z.string(), z.array(rawTorrentResourceSchema)).optional(),
+});
+
+export const videoDetailResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string().optional(),
+  code: z.number().optional(),
+  data: rawVideoDetailSchema,
+});
+
 export type RawMukakuItem = z.infer<typeof rawMukakuItemSchema>;
+export type RawTorrentResource = z.infer<typeof rawTorrentResourceSchema>;
+export type RawVideoDetail = z.infer<typeof rawVideoDetailSchema>;
 export type SearchResponse = z.infer<typeof searchResponseSchema>;
+export type VideoDetailResponse = z.infer<typeof videoDetailResponseSchema>;
+export type MukakuMediaType = "movie" | "tv" | "unknown";
 
 export interface MukakuSearchItem {
   title: string;
   originalTitle?: string;
   year?: number;
-  type: "movie" | "tv" | "unknown";
+  type: MukakuMediaType;
   doubanId?: number;
   doubanUrl?: string;
   doubanScore?: number;
@@ -49,4 +82,37 @@ export interface MukakuSearchItem {
   seedUpdatedAt?: string;
   image?: string;
   detailUrl?: string;
+}
+
+export interface ResourcesResult {
+  doubanId: number;
+  mukakuId?: number;
+  title: string;
+  originalTitle?: string;
+  year?: number;
+  type: MukakuMediaType;
+  totalCount: number;
+  matchingCount: number;
+  returnedCount: number;
+  filters: ResourcesFilters;
+  availableQualities: string[];
+  resources: TorrentResource[];
+}
+
+export interface TorrentResource {
+  id?: number;
+  name: string;
+  quality: string;
+  qualityGroup: string;
+  size?: string;
+  sizeBytes?: number;
+  magnetUrl?: string;
+  torrentDownloadUrl?: string;
+  publishedAt?: string;
+  isNew: boolean;
+}
+
+export interface ResourcesFilters {
+  quality?: string;
+  limit?: number;
 }
