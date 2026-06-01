@@ -3,6 +3,7 @@ import {
   getDoubanUrl,
   getMukakuDetailUrl,
 } from "./constants.js";
+import { analyzeTorrentResourceTitle } from "./resource-analysis.js";
 import type {
   MukakuMediaType,
   MukakuSearchItem,
@@ -54,12 +55,15 @@ function normalizeTorrentResource(item: RawTorrentResource): TorrentResource {
     cleanOptionalString(item.definition_group) ??
     cleanOptionalString(item.zqxd) ??
     "unknown";
+  const name = cleanOptionalString(item.zname) ?? "未知资源";
   const size = cleanOptionalString(item.zsize);
+  const analysis = analyzeTorrentResourceTitle(name);
 
   return {
     id: item.id,
-    name: cleanOptionalString(item.zname) ?? "未知资源",
+    name,
     quality,
+    ...(analysis ? { analysis } : {}),
     size,
     sizeBytes: parseSizeBytes(size),
     magnetUrl: cleanOptionalString(item.zlink),

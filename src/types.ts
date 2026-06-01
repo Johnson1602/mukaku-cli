@@ -109,12 +109,34 @@ export interface TorrentResource {
   id?: number;
   name: string;
   quality: string;
+  analysis?: TorrentResourceAnalysis;
   size?: string;
   sizeBytes?: number;
   magnetUrl?: string;
   torrentDownloadUrl?: string;
   publishedAt?: string;
   isNew: boolean;
+}
+
+export interface TorrentResourceAnalysis {
+  resolution?: string;
+  source?: string;
+  webProvider?: string;
+  videoCodec?: string;
+  releaseGroup?: string;
+  season?: number;
+  episodeRange?: EpisodeRange;
+  isCompleteSeason?: boolean;
+  frameRate?: number;
+  isHighBitrate?: boolean;
+  hdrFormats?: string[];
+  audioFormats?: string[];
+  subtitleLanguages?: string[];
+}
+
+export interface EpisodeRange {
+  start: number;
+  end: number;
 }
 
 export interface ResourcesFilters {
