@@ -164,9 +164,13 @@ Human output:
 - Always show title/year context.
 - Always show count heading.
 - Show filtered count and global count when filters are applied.
-- Show full resource names.
-- Omit magnet and torrent download URLs from human output.
-- Use minimal resource rows.
+- Use compact resource rows built from Mukaku quality plus detected analysis fields.
+- Include all detected `analysis` fields except `audioFormats`.
+- For `subtitleLanguages`, only indicate when Chinese subtitles are unavailable.
+- Show release date, size, and magnet URL.
+- Omit full resource names and torrent download URLs from human output.
+- Omit Mukaku quality labels such as `杜比视界` or `WEB-1080P`.
+- Separate resource items with a blank line.
 
 Example:
 
@@ -174,8 +178,9 @@ Example:
 低智商犯罪 (2026)
 66 torrent resources
 
-1. [杜比视界] 全集 低智商犯罪[杜比视界版本][全24集][国语音轨+简繁英字幕]...
-   90.4 GB · 2026-05-22 · NEW
+1. S01 complete (24E) · 2160p · Dolby Vision
+   WEB-DL · H.265/HEVC · ColorWEB
+   2026-05-22 · 90.4 GB · magnet:...
 ```
 
 With quality:

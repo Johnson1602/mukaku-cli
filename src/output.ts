@@ -85,14 +85,84 @@ function formatCountHeading(result: ResourcesResult) {
   return `${result.totalCount} torrent resources`;
 }
 
-function formatResourceMeta(resource: TorrentResource) {
+function formatEpisodeRange(resource: TorrentResource) {
+  const episodeRange = resource.analysis?.episodeRange;
+
+  if (!episodeRange) {
+    return undefined;
+  }
+
+  return episodeRange.start === episodeRange.end
+    ? `E${episodeRange.start}`
+    : `E${episodeRange.start}-${episodeRange.end}`;
+}
+
+function formatEpisodeCoverage(resource: TorrentResource) {
+  const analysis = resource.analysis;
+  const episodeRange = analysis?.episodeRange;
+  const season = analysis?.season
+    ? `S${String(analysis.season).padStart(2, "0")}`
+    : undefined;
+
+  if (!episodeRange) {
+    return season;
+  }
+
+  if (analysis?.isCompleteSeason) {
+    const episodeCount = episodeRange.end - episodeRange.start + 1;
+    return season
+      ? `${season} complete (${episodeCount}E)`
+      : `complete (${episodeCount}E)`;
+  }
+
+  const formattedRange = formatEpisodeRange(resource);
+  return [season, formattedRange].filter(Boolean).join(" ");
+}
+
+function hasChineseSubtitles(resource: TorrentResource) {
+  return resource.analysis?.subtitleLanguages?.some((language) =>
+    ["zh", "zh-Hans", "zh-Hant"].includes(language),
+  );
+}
+
+function formatViewingParts(resource: TorrentResource) {
+  const analysis = resource.analysis;
+
+  if (!analysis) {
+    return [];
+  }
+
+  const parts = [
+    formatEpisodeCoverage(resource),
+    analysis.resolution,
+    analysis.frameRate ? `${analysis.frameRate}fps` : undefined,
+    analysis.isHighBitrate ? "High bitrate" : undefined,
+    ...(analysis.hdrFormats ?? []),
+    analysis.subtitleLanguages && !hasChineseSubtitles(resource)
+      ? "zh unavailable"
+      : undefined,
+  ];
+
+  return parts.filter(Boolean);
+}
+
+function formatReleaseParts(resource: TorrentResource) {
+  const analysis = resource.analysis;
+
+  if (!analysis) {
+    return [];
+  }
+
   return [
-    resource.size,
-    resource.publishedAt,
-    resource.isNew ? "NEW" : undefined,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+    analysis.source,
+    analysis.webProvider,
+    analysis.videoCodec,
+    analysis.releaseGroup,
+  ].filter(Boolean);
+}
+
+function formatAvailabilityParts(resource: TorrentResource) {
+  return [resource.publishedAt, resource.size, resource.magnetUrl].filter(Boolean);
 }
 
 export function formatResourcesResult(result: ResourcesResult): string {
@@ -109,16 +179,30 @@ export function formatResourcesResult(result: ResourcesResult): string {
 
   lines.push(
     "",
-    ...result.resources.flatMap((resource, index) => {
-      const resourceLines = [`${index + 1}. ${resource.name}`];
-      const meta = formatResourceMeta(resource);
+    result.resources
+      .map((resource, index) => {
+        const viewingParts = formatViewingParts(resource);
+        const heading = [
+          `${index + 1}.`,
+          viewingParts.length > 0 ? viewingParts.join(" · ") : undefined,
+        ]
+          .filter(Boolean)
+          .join(" ");
+        const resourceLines = [heading];
+        const releaseParts = formatReleaseParts(resource);
+        const availabilityParts = formatAvailabilityParts(resource);
 
-      if (meta) {
-        resourceLines.push(`   ${meta}`);
-      }
+        if (releaseParts.length > 0) {
+          resourceLines.push(`   ${releaseParts.join(" · ")}`);
+        }
 
-      return resourceLines;
-    }),
+        if (availabilityParts.length > 0) {
+          resourceLines.push(`   ${availabilityParts.join(" · ")}`);
+        }
+
+        return resourceLines.join("\n");
+      })
+      .join("\n\n"),
   );
 
   return lines.join("\n");
