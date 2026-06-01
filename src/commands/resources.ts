@@ -6,12 +6,26 @@ import {
 import { buildResourcesResult } from "../normalize.js";
 import { parsePositiveInteger } from "../options.js";
 import { printResourcesResult } from "../output.js";
+import { recommendResources } from "../recommendations.js";
 
 interface ResourcesOptions {
   quality?: string;
   limit?: number;
+  recommend?: boolean | number;
   json?: boolean;
   raw?: boolean;
+}
+
+function parseRecommendationCount(value: string): number {
+  return parsePositiveInteger(value);
+}
+
+function resolveRecommendationCount(value: ResourcesOptions["recommend"]): number | undefined {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  return value ? 3 : undefined;
 }
 
 function assertValidRawOptions(options: ResourcesOptions): void {
@@ -19,10 +33,17 @@ function assertValidRawOptions(options: ResourcesOptions): void {
     options.json ? "--json" : undefined,
     options.quality ? "--quality" : undefined,
     options.limit ? "--limit" : undefined,
+    options.recommend ? "--recommend" : undefined,
   ].filter(Boolean);
 
   if (options.raw && rawModifiers.length > 0) {
     throw new Error(`--raw cannot be combined with ${rawModifiers.join(", ")}`);
+  }
+}
+
+function assertValidRecommendationOptions(options: ResourcesOptions): void {
+  if (options.recommend && options.limit) {
+    throw new Error("--recommend cannot be combined with --limit");
   }
 }
 
@@ -33,11 +54,13 @@ export function registerResourcesCommand(program: Command): void {
     .argument("<douban-id>", "Douban subject id used by Mukaku detail pages", parsePositiveInteger)
     .option("--quality <quality>", "filter by exact Mukaku quality group")
     .option("--limit <number>", "maximum number of resources to print", parsePositiveInteger)
+    .option("--recommend [number]", "print recommended torrent resources", parseRecommendationCount)
     .option("--json", "print normalized JSON")
     .option("--raw", "print raw Mukaku API response")
     .action(async (doubanId: number, options: ResourcesOptions) => {
       try {
         assertValidRawOptions(options);
+        assertValidRecommendationOptions(options);
 
         if (options.raw) {
           const rawResponse = await fetchRawVideoDetailResponse({ doubanId });
@@ -50,6 +73,11 @@ export function registerResourcesCommand(program: Command): void {
           quality: options.quality,
           limit: options.limit,
         });
+        const recommendationCount = resolveRecommendationCount(options.recommend);
+
+        if (recommendationCount) {
+          result.recommendations = recommendResources(result, recommendationCount);
+        }
 
         if (options.json) {
           console.log(JSON.stringify(result, null, 2));

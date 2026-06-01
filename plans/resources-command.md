@@ -205,6 +205,50 @@ JSON output:
 - Include URLs in `resources`.
 - Include counts, filters, and available qualities.
 
+## Recommendation Behavior
+
+`resources` supports an opt-in recommendation mode:
+
+```text
+mukaku resources <douban-id> --recommend
+mukaku resources <douban-id> --recommend 5
+mukaku resources <douban-id> --quality WEB-1080P --recommend
+```
+
+V1 recommendation contract:
+
+- `--recommend` without a number returns up to 3 recommended resources.
+- `--recommend <number>` returns up to that many recommended resources.
+- `--recommend` can be combined with `--json` and `--quality`.
+- `--recommend` cannot be combined with `--limit`.
+- `--raw` cannot be combined with `--recommend`.
+- JSON output keeps the full `resources` candidate set and adds `recommendations`.
+- Human output prints only recommended resource rows when recommendations are present.
+- Recommendations are plain `TorrentResource[]`; no score/reason/warning contract yet.
+
+Automatic quality fallback order:
+
+```text
+WEB-4K > 杜比视界 > 4K蓝光 > WEB-1080P > 蓝光原盘 > 1080P蓝光 > 4K蓝光原盘 > 其他
+```
+
+Recommendation rules:
+
+- Hard-exclude movie resources over 70 GB. TV recommendations do not use a size cap because complete seasons can legitimately be large.
+- Hard-exclude high frame rate resources, currently 50 fps or higher.
+- Use explicit `--quality` as a hard candidate filter.
+- For TV recommendations without an explicit `--quality`, prefer eligible complete-season resources first, even when they are not in `WEB-4K`.
+- When TV complete-season recommendations leave open slots, fill the remaining recommendations by original resource list order so the latest resources appear first.
+- With an explicit `--quality`, keep recommendations inside that quality and prefer complete TV season coverage within the filtered pool.
+- Prefer known release groups over unknown/no release group.
+- Prefer any HDR/DV format over no HDR/DV.
+- Prefer high bitrate after HDR/DV presence.
+- Prefer HDR+DV over HDR-only, and HDR-only over DV-only.
+- Prefer H.265/HEVC over H.264/AVC.
+- Penalize movie resources over 50 GB, but keep them eligible until the 70 GB hard exclusion.
+- Use larger size as a bitrate proxy only after the stronger rules above.
+- Use original resource list order as the final tie-breaker.
+
 ## Validation
 
 Use strict-ish Zod validation:

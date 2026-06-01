@@ -67,6 +67,10 @@ function formatTitle(result: ResourcesResult) {
 }
 
 function formatCountHeading(result: ResourcesResult) {
+  if (result.recommendations) {
+    return `${result.recommendations.length} recommended torrent resources`;
+  }
+
   const hasQualityFilter = result.filters.quality !== undefined;
   const hasLimit = result.filters.limit !== undefined;
 
@@ -167,19 +171,23 @@ function formatAvailabilityParts(resource: TorrentResource) {
 
 export function formatResourcesResult(result: ResourcesResult): string {
   const lines = [formatTitle(result), formatCountHeading(result)];
+  const resources = result.recommendations ?? result.resources;
 
   if (result.filters.quality) {
     lines.push(`Quality: ${result.filters.quality}`);
   }
 
-  if (result.resources.length === 0) {
-    lines.push("", "No torrent resources found.");
+  if (resources.length === 0) {
+    const emptyMessage = result.recommendations
+      ? "No recommended torrent resources found."
+      : "No torrent resources found.";
+    lines.push("", emptyMessage);
     return lines.join("\n");
   }
 
   lines.push(
     "",
-    result.resources
+    resources
       .map((resource, index) => {
         const viewingParts = formatViewingParts(resource);
         const heading = [

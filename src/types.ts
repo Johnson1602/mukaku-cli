@@ -133,6 +133,8 @@ export interface ResourcesResult extends MukakuResourceSummary {
   returnedCount: number;
   /** Filters used to produce this resources result. */
   filters: ResourcesFilters;
+  /** Recommended resources derived from the returned resource set. */
+  recommendations?: TorrentResource[];
 }
 
 export interface TorrentResource {

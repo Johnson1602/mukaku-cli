@@ -123,4 +123,56 @@ describe("formatResourcesResult", () => {
    WEB-DL · H.265/HEVC · BlackTV
    2026-05-14 · 86.69 GB · magnet:?xt=urn:btih:complete-season`);
   });
+
+  it("prints only recommended rows when recommendations are present", () => {
+    const recommendedResource = {
+      id: 1,
+      name: "推荐资源.2026.2160p.WEB-DL.H265.HDR-DreamHD",
+      quality: "WEB-4K",
+      analysis: {
+        resolution: "2160p",
+        source: "WEB-DL",
+        videoCodec: "H.265/HEVC",
+        releaseGroup: "DreamHD",
+        hdrFormats: ["HDR"],
+      },
+      size: "12.3 GB",
+      sizeBytes: 13207024435,
+      magnetUrl: "magnet:?xt=urn:btih:recommended",
+      publishedAt: "2026-05-31",
+      isNew: true,
+    };
+    const result: ResourcesResult = {
+      doubanId: 123,
+      title: "挽救计划",
+      year: 2026,
+      type: "movie",
+      totalCount: 2,
+      matchingCount: 2,
+      returnedCount: 2,
+      filters: {},
+      availableQualities: ["WEB-4K"],
+      resources: [
+        recommendedResource,
+        {
+          id: 2,
+          name: "普通资源.2026.1080p.WEB-DL.H264-QuickIO",
+          quality: "WEB-1080P",
+          size: "2.1 GB",
+          sizeBytes: 2254857830,
+          magnetUrl: "magnet:?xt=urn:btih:ordinary",
+          publishedAt: "2026-05-30",
+          isNew: false,
+        },
+      ],
+      recommendations: [recommendedResource],
+    };
+
+    expect(formatResourcesResult(result)).toBe(`挽救计划 (2026)
+1 recommended torrent resources
+
+1. 2160p · HDR
+   WEB-DL · H.265/HEVC · DreamHD
+   2026-05-31 · 12.3 GB · magnet:?xt=urn:btih:recommended`);
+  });
 });
