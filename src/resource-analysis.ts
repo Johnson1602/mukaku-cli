@@ -80,6 +80,10 @@ function assignIfDefined<K extends keyof TorrentResourceAnalysis>(
   }
 }
 
+function removeBracketedText(title: string) {
+  return title.replace(/\[[^\]]*]/g, " ");
+}
+
 function detectResolution(title: string) {
   const match = /(?:^|[.\s\[])(2160p|1080p|720p|480p)(?=$|[.\s\]\-])/i.exec(
     title,
@@ -181,18 +185,22 @@ function detectIsCompleteSeason(title: string) {
   return /全集|全\d{1,3}集/.test(title) ? true : undefined;
 }
 
-function detectFrameRate(title: string) {
+function detectFrameRateFromText(title: string) {
   const match = /(?:^|[.\s\[])(50|60|120)(?:fps|帧率版本)(?=$|[.\s\]\-])/i.exec(
     title,
   );
   return match ? Number(match[1]) : undefined;
 }
 
+function detectFrameRate(title: string) {
+  return detectFrameRateFromText(removeBracketedText(title)) ?? detectFrameRateFromText(title);
+}
+
 function detectIsHighBitrate(title: string) {
   return /高码版/.test(title) || hasDelimitedToken(title, "HQ") ? true : undefined;
 }
 
-function detectHdrFormats(title: string) {
+function detectHdrFormatsFromText(title: string) {
   const hdrFormats: string[] = [];
 
   if (/杜比视界|DoVi|(?:^|[.\[])(DV)(?=$|[.\]\-])/i.test(title)) {
@@ -203,7 +211,7 @@ function detectHdrFormats(title: string) {
     appendUnique(hdrFormats, "HDR10+");
   }
 
-  if (hasDelimitedToken(title, "HDR10")) {
+  if (hasDelimitedToken(title, "HDR10") && !/HDR10\+|HDR10plus/i.test(title)) {
     appendUnique(hdrFormats, "HDR10");
   }
 
@@ -212,6 +220,10 @@ function detectHdrFormats(title: string) {
   }
 
   return hdrFormats.length > 0 ? hdrFormats : undefined;
+}
+
+function detectHdrFormats(title: string) {
+  return detectHdrFormatsFromText(removeBracketedText(title)) ?? detectHdrFormatsFromText(title);
 }
 
 function detectAudioFormats(title: string) {
@@ -244,14 +256,14 @@ function detectSubtitleLanguages(title: string) {
 
   const subtitleLanguages: string[] = [];
 
-  if (/简繁英字幕/.test(title)) {
+  if (/简繁英.*字幕/.test(title)) {
     appendUnique(subtitleLanguages, "zh-Hans");
     appendUnique(subtitleLanguages, "zh-Hant");
     appendUnique(subtitleLanguages, "en");
-  } else if (/繁英字幕/.test(title)) {
+  } else if (/繁英.*字幕/.test(title)) {
     appendUnique(subtitleLanguages, "zh-Hant");
     appendUnique(subtitleLanguages, "en");
-  } else if (/简繁字幕/.test(title)) {
+  } else if (/简繁.*字幕/.test(title)) {
     appendUnique(subtitleLanguages, "zh-Hans");
     appendUnique(subtitleLanguages, "zh-Hant");
   } else {

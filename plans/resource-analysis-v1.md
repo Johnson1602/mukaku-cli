@@ -221,6 +221,8 @@ Use a number:
 - `60fps` / `60帧率版本` => `60`
 - `120fps` / `120帧率版本` => `120`
 
+Prefer technical `fps` tokens outside bracket labels. Use bracket labels such as `[60帧率版本]` only as fallback when no technical `fps` token is present.
+
 Omit when absent.
 
 ### `isHighBitrate`
@@ -247,6 +249,8 @@ Normalize variants:
 
 - `DV`, `DoVi`, `杜比视界`, `杜比视界版本` => `Dolby Vision`
 - `HDR10plus` => `HDR10+`
+
+For technical HDR fields, prefer dot-delimited release-string tokens outside bracket labels. Bracket labels such as `[HDR+杜比视界双版本]` are fallback hints only. If the release string contains `.DoVi.HDR10.`, output `["Dolby Vision", "HDR10"]` rather than adding generic `HDR` from the bracket label.
 
 If a title says `HDR+杜比视界双版本`, include both:
 

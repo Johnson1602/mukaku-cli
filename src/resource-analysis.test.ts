@@ -28,10 +28,18 @@ describe("analyzeTorrentResourceTitle", () => {
       resolution: "2160p",
       source: "UHD BluRay REMUX",
       releaseGroup: "DreamHD",
-      hdrFormats: ["Dolby Vision", "HDR10", "HDR"],
+      hdrFormats: ["Dolby Vision", "HDR10"],
       audioFormats: ["TrueHD", "Atmos"],
       subtitleLanguages: ["zh-Hans", "zh-Hant", "en"],
     });
+  });
+
+  it("prefers technical HDR tokens over broader bracket labels", () => {
+    const result = analyzeTorrentResourceTitle(
+      "至尊马蒂[HDR+杜比视界双版本][简繁英字幕].2025.USA.A24.BluRay.REMUX.UHD.DoVi.HDR10.2160p.Atmos.TrueHD7.1-DreamHD",
+    );
+
+    expect(result?.hdrFormats).toEqual(["Dolby Vision", "HDR10"]);
   });
 
   it("detects complete TV season coverage", () => {
@@ -123,6 +131,14 @@ describe("analyzeTorrentResourceTitle", () => {
     });
   });
 
+  it("prefers technical fps tokens over bracket frame-rate labels", () => {
+    const result = analyzeTorrentResourceTitle(
+      "测试片[60帧率版本][中文字幕].2025.2160p.WEB-DL.H265.120fps.AAC-DreamHD",
+    );
+
+    expect(result?.frameRate).toBe(120);
+  });
+
   it("represents no-subtitle resources as subtitleLanguages none", () => {
     const result = analyzeTorrentResourceTitle(
       "冥婚红包[无字片源].The.Red.Envelope.2025.1080p.NF.WEB-DL.x264.DDP5.1-QuickIO",
@@ -137,6 +153,22 @@ describe("analyzeTorrentResourceTitle", () => {
       audioFormats: ["DDP"],
       subtitleLanguages: ["none"],
     });
+  });
+
+  it("detects subtitle languages when descriptors appear before 字幕", () => {
+    const result = analyzeTorrentResourceTitle(
+      "挽救计划[国英多音轨+简繁英双语特效字幕].2026.2160p.iTunes.WEB-DL.DDP.5.1.Atmos.HDR10+.H.265.2Audio.V1-DreamHD",
+    );
+
+    expect(result?.subtitleLanguages).toEqual(["zh-Hans", "zh-Hant", "en"]);
+  });
+
+  it("does not duplicate HDR10 when title contains HDR10+", () => {
+    const result = analyzeTorrentResourceTitle(
+      "挽救计划[国英多音轨+简繁英双语特效字幕].2026.2160p.iTunes.WEB-DL.DDP.5.1.Atmos.HDR10+.H.265.2Audio.V1-DreamHD",
+    );
+
+    expect(result?.hdrFormats).toEqual(["HDR10+"]);
   });
 
   it("omits analysis when no high-confidence fields are detected", () => {
