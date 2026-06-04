@@ -938,9 +938,17 @@ node dist/index.mjs search "阿凡达"
 To test the package command locally:
 
 ```bash
-pnpm link --global
+pnpm link --global .
 mukaku search "阿凡达"
 ```
+
+Note the trailing `.`. Older pnpm let you run `pnpm link --global` with no argument to mean "link the current directory." Newer pnpm (10/11+) removed that implicit behavior and requires you to name the directory, otherwise it errors with:
+
+```text
+[ERR_PNPM_LINK_BAD_PARAMS] You must provide a parameter. Usage: pnpm link <dir>
+```
+
+So `pnpm link --global .` is the form that works on both old and new pnpm. You may also see a harmless `[WARN] Using --global skips the package manager check` line; that is just pnpm noting that global linking bypasses the project's `packageManager` field.
 
 If you do not want to link globally, you can also use:
 
@@ -949,6 +957,37 @@ node dist/index.mjs search "阿凡达"
 ```
 
 The important idea: `package.json` `bin` maps the command name `mukaku` to the built executable file.
+
+### Linked packages do not appear in `pnpm list -g`
+
+After linking, you might run `pnpm list -g` and not see `mukaku` listed. That is expected, not a bug. `pnpm link --global` and `pnpm list -g` operate on two different things:
+
+- `pnpm list -g` lists packages *installed into* the global virtual store (only what you `pnpm add -g`'d).
+- `pnpm link --global` does not install anything into that store. It just drops a **bin shim** into your global bin directory (on macOS, `~/Library/pnpm/bin`) that points straight back at your project. The package never enters the global `node_modules`, so `list -g` has nothing to report.
+
+The command still works from any directory because that global bin directory is on your `PATH`. To inspect what is actually linked, look at the shim directly:
+
+```bash
+# Find the command and its shim location
+which mukaku
+
+# A pnpm bin shim is a small shell script; its `exec` line shows the target
+cat "$(which mukaku)"
+
+# List every global bin shim
+ls -la ~/Library/pnpm/bin
+```
+
+Two things to remember about the shim:
+
+- It runs the built `dist/index.mjs`, so you must `pnpm build` after code changes for `mukaku` to pick them up (it is not running your TypeScript source).
+- The shim hardcodes the project path, so moving the project folder breaks `mukaku`.
+
+To remove the link later, run from the project directory:
+
+```bash
+pnpm uninstall --global mukaku-cli   # or: pnpm rm -g mukaku-cli
+```
 
 Checkpoint:
 
@@ -968,13 +1007,14 @@ Expected:
 Then run:
 
 ```bash
-pnpm link --global
+pnpm link --global .
 mukaku search "阿凡达" --limit 1
 ```
 
 Expected:
 
 - The command name `mukaku` should work from your shell.
+- `mukaku` will not show up in `pnpm list -g` — linking adds a bin shim, not a global install. See the notes above.
 
 ## 15. Add A Normalization Test
 
