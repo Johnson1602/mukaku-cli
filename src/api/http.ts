@@ -1,7 +1,15 @@
 import { MUKAKU_BASE_URL } from "../constants.js";
 
-const APP_ID = "83768d9ad4";
-const IDENTITY = "23734adac0301bccdcb107c4aa21f96c";
+interface MukakuClientParams {
+  appId: string;
+  identity: string;
+}
+
+// Public request identifiers used by Mukaku's web client, not private credentials.
+const DEFAULT_MUKAKU_CLIENT_PARAMS: MukakuClientParams = {
+  appId: "83768d9ad4",
+  identity: "23734adac0301bccdcb107c4aa21f96c",
+};
 
 export function buildApiUrl(
   pathname: string,
@@ -13,8 +21,8 @@ export function buildApiUrl(
     url.searchParams.set(key, String(value));
   }
 
-  url.searchParams.set("app_id", APP_ID);
-  url.searchParams.set("identity", IDENTITY);
+  url.searchParams.set("app_id", DEFAULT_MUKAKU_CLIENT_PARAMS.appId);
+  url.searchParams.set("identity", DEFAULT_MUKAKU_CLIENT_PARAMS.identity);
 
   return url;
 }
