@@ -4,31 +4,13 @@ A small TypeScript CLI for searching Mukaku movie and TV resources, inspecting t
 
 The CLI is intentionally stateless: it calls Mukaku live, normalizes the response, and prints either compact terminal output or JSON for agents and scripts.
 
-## Requirements
-
-- Node.js 22 or newer
-- pnpm 11
-
-## Setup
+## Install
 
 ```sh
-pnpm install
-pnpm build
+npm install -g @willxuu/mukaku-cli
 ```
 
-Run from source during development:
-
-```sh
-pnpm dev search "Avatar"
-```
-
-Run the built CLI:
-
-```sh
-node dist/index.mjs search "Avatar"
-```
-
-If the package is linked or installed, use the `mukaku` binary:
+After install, use the `mukaku` command:
 
 ```sh
 mukaku search "Avatar"
@@ -101,6 +83,27 @@ Use `--raw` only when debugging Mukaku API behavior or updating the normalizers;
 Mukaku API requests include `app_id` and `identity` query parameters. They are public request identifiers used by Mukaku's web client, not private credentials, and are centralized in `src/api/http.ts`.
 
 ## Development
+
+Install dependencies:
+
+```sh
+pnpm install
+```
+
+Run from source:
+
+```sh
+pnpm dev search "Avatar"
+```
+
+Run the built CLI:
+
+```sh
+pnpm build
+node dist/index.mjs search "Avatar"
+```
+
+Verify changes:
 
 ```sh
 pnpm typecheck

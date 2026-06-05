@@ -1,20 +1,43 @@
 {
-  "name": "mukaku-cli",
+  "name": "@willxuu/mukaku-cli",
   "version": "0.1.1",
   "description": "A CLI for searching Mukaku movie and TV resources",
   "type": "module",
   "bin": {
     "mukaku": "./dist/index.mjs"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsdown",
+    "prepack": "pnpm build",
+    "prepublishOnly": "pnpm typecheck && pnpm test",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "cli",
+    "mukaku",
+    "movie",
+    "tv",
+    "torrent"
+  ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Johnson1602/mukaku-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Johnson1602/mukaku-cli/issues"
+  },
+  "homepage": "https://github.com/Johnson1602/mukaku-cli#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=22"
   },
