@@ -16,6 +16,16 @@ After install, use the `mukaku` command:
 mukaku search "Avatar"
 ```
 
+## Agent Skill
+
+For AI coding agents, install the optional Mukaku resource finder skill:
+
+```sh
+npx skills add -g Johnson1602/skills --skill mukaku-resource-finder
+```
+
+The skill teaches agents to use `mukaku search --json` and `mukaku resources --recommend --json` for movie and TV resource requests.
+
 ## Commands
 
 ### Search
