@@ -31,7 +31,7 @@ sed -n '1,220p' package.json
 Expected:
 
 - The current package is still named `mukaku-cli`.
-- The current binary field points `mukaku` to `./dist/index.mjs`.
+- The current binary field points `mukaku` to `dist/index.mjs`.
 
 ## 2. Update `package.json` for npm publishing
 
@@ -44,7 +44,7 @@ Replace `package.json` with this complete file:
   "description": "A CLI for searching Mukaku movie and TV resources",
   "type": "module",
   "bin": {
-    "mukaku": "./dist/index.mjs"
+    "mukaku": "dist/index.mjs"
   },
   "files": [
     "dist",
