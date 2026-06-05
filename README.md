@@ -110,3 +110,11 @@ pnpm typecheck
 pnpm test
 pnpm build
 ```
+
+## Disclaimer
+
+This project is for personal learning and research on CLI architecture only.
+
+This project is not affiliated with, endorsed by, or authorized by Mukaku or any related service provider. Users are responsible for ensuring that their use complies with the applicable website terms, service rules, copyright rules, and local laws.
+
+Do not use this tool to bypass access controls, rate limits, authentication requirements, or any other technical or contractual restrictions. The author is not responsible for account issues, data loss, service bans, legal claims, or other consequences caused by misuse.
