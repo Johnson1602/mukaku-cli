@@ -1,6 +1,6 @@
 {
   "name": "@willxuu/mukaku-cli",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A CLI for discovering Mukaku movies, TV shows, and torrent resources",
   "type": "module",
   "bin": {
