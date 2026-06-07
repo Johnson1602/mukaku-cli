@@ -1,6 +1,6 @@
 # mukaku-cli
 
-A small TypeScript CLI for searching Mukaku movie and TV resources, inspecting title-level torrent resources, and getting simple resource recommendations.
+A small TypeScript CLI for searching Mukaku movie and TV resources, browsing homepage selections, inspecting title-level torrent resources, and getting simple resource recommendations.
 
 The CLI is intentionally stateless: it calls Mukaku live, normalizes the response, and prints either compact terminal output or JSON for agents and scripts.
 
@@ -27,6 +27,34 @@ npx skills add -g Johnson1602/skills --skill mukaku-resource-finder
 The skill teaches agents to use `mukaku search --json` and `mukaku resources --recommend --json` for movie and TV resource requests.
 
 ## Commands
+
+### Featured
+
+List Mukaku homepage selections and popularity lists:
+
+```sh
+mukaku featured movies
+mukaku featured tv
+mukaku featured recent
+mukaku featured weekly
+mukaku featured monthly
+```
+
+Running `mukaku featured` without a category prints the available subcommands.
+
+Options for each category:
+
+- `--limit <number>`: locally limit the results; omitted by default so the full list is returned
+- `--json`: print normalized JSON using the same item shape as `search --json`
+- `--raw`: print the raw Mukaku API response
+
+Featured results preserve Mukaku's server-provided order. `--raw` cannot be combined with `--json` or `--limit`.
+
+For agent workflows:
+
+```sh
+mukaku featured recent --json
+```
 
 ### Search
 

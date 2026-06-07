@@ -1,7 +1,7 @@
 {
   "name": "@willxuu/mukaku-cli",
   "version": "0.1.1",
-  "description": "A CLI for searching Mukaku movie and TV resources",
+  "description": "A CLI for discovering Mukaku movies, TV shows, and torrent resources",
   "type": "module",
   "bin": {
     "mukaku": "dist/index.mjs"
